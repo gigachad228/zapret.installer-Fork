@@ -50,11 +50,21 @@ echo "2) Установить zapret с конфигами"
 read -p "Введите номер выбора (1 или 2): " choice
 
 if [ -d /opt/zapret ]; then
+    $SUDO rm -rf /opt/zapret.old
     $SUDO mv /opt/zapret /opt/zapret.old
 fi
 
+if [ "$choice" -eq 2 ]; then
+    cd /tmp || exit 1
+    git clone https://github.com/Snowy-Fluffy/zapret.cfgs.git | $LOG_CMD
+    cd /tmp/zapret.cfgs || exit 1
+    tar -xf binaries.tar
+fi
 $SUDO git clone https://github.com/bol-van/zapret /opt/zapret | $LOG_CMD
 cd /opt/zapret || exit 1
+if [ "$choice" -eq 2 ]; then
+    $SUDO cp -r /tmp/zapret.cfgs/binaries /opt/zapret/binaries
+fi
 $SUDO chmod -R 777 /opt/zapret
 
 if [ "$install_mode" -eq 1 ]; then
@@ -68,9 +78,7 @@ else
 fi
 
 if [ "$choice" -eq 2 ]; then
-    cd /tmp || exit 1
-    git clone https://github.com/Snowy-Fluffy/zapret.cfgs.git | $LOG_CMD
-    cd zapret.cfgs || exit 1
+    cd /tmp/zapret.cfgs || exit 1
     $SUDO cp -r config /opt/zapret/config
     $SUDO cp -r zapret-hosts-user.txt /opt/zapret/ipset/zapret-hosts-user.txt
     $SUDO cp -r zapret-hosts-auto.txt /opt/zapret/ipset/zapret-hosts-auto.txt

@@ -26,8 +26,8 @@ detect_init() {
 check_zapret_status() {
     case "$INIT_SYSTEM" in
         systemd)
-        ZAPRET_ACTIVE=$(systemctl show -p ActiveState zapret | cut -d= -f2)
-        ZAPRET_ENABLED=$(systemctl is-enabled zapret)
+        ZAPRET_ACTIVE=$(systemctl show -p ActiveState zapret | cut -d= -f2 || true)
+        ZAPRET_ENABLED=$(systemctl is-enabled zapret 2>/dev/null || echo "false")
         ZAPRET_SUBSTATE=$(systemctl show -p SubState zapret | cut -d= -f2)
         if [[ "$ZAPRET_ACTIVE" == "active" && "$ZAPRET_SUBSTATE" == "running" ]]; then
            ZAPRET_ACTIVE=true

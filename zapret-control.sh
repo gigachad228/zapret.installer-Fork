@@ -36,7 +36,7 @@ main_menu() {
                 1) update_zapret;;
                 2) configure_zapret;;
                 3) systemctl restart zapret;;
-                4) systemctl status zapret; read -p "Нажмите Enter для продолжения...";;
+                4) SYSTEMD_PAGER=cat systemctl status zapret; read -p "Нажмите Enter для продолжения...";;
                 5) systemctl enable zapret;;
                 6) systemctl start zapret;;
                 7) systemctl disable zapret;;

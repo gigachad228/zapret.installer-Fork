@@ -147,7 +147,7 @@ main_menu() {
         check_zapret_status
         echo "===== Меню управления Запретом ====="
         if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
-        if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi
+        if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; else echp "!Запрет не установлен!"; fi
         if [[ -d /opt/zapret ]]; then
             echo "1) Проверить на обновления"
             echo "2) Сменить стратегию"

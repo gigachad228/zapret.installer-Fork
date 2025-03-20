@@ -1,98 +1,115 @@
 #!/bin/bash
 
-if [ "$EUID" -eq 0 ]; then
-    SUDO=""
-else
-    SUDO="sudo"
+set -e  # Выход при ошибке
+
+# Проверка прав суперпользователя
+if [[ $EUID -ne 0 ]]; then
+    exec sudo "$0" "$@"
 fi
 
-if command -v pacman &> /dev/null; then
-    PKG_MANAGER="pacman"
-    INSTALL_CMD="$SUDO pacman -S --noconfirm"
-elif command -v apt &> /dev/null; then
-    PKG_MANAGER="apt"
-    INSTALL_CMD="$SUDO apt-get install -y"
-elif command -v dnf &> /dev/null; then
-    PKG_MANAGER="dnf"
-    INSTALL_CMD="$SUDO dnf install -y"
-elif command -v zypper &> /dev/null; then
-    PKG_MANAGER="zypper"
-    INSTALL_CMD="$SUDO zypper install -y"
-elif command -v opkg &> /dev/null; then
-    PKG_MANAGER="opkg"
-    INSTALL_CMD="$SUDO opkg install"
-elif command -v apk &> /dev/null; then
-    PKG_MANAGER="apk"
-    INSTALL_CMD="$SUDO apk add"
-else
-    echo "Не удалось определить пакетный менеджер. Убедитесь, что ваш дистрибутив поддерживается."
-    exit 1
-fi
+# Проверка состояния сервиса Запрет
+check_zapret_status() {
+    systemctl is-active --quiet zapret && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
+    systemctl is-enabled --quiet zapret && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
+}
 
+# Главное меню
+main_menu() {
+    while true; do
+        clear
+        check_zapret_status
+        echo "===== Меню управления Запретом ====="
+        if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
+        if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi
+        if ! systemctl list-units --type=service | grep -q zapret.service; then
+            echo "1) Проверить на обновления"
+            echo "2) Сменить конфигурацию"
+            echo "3) Перезапустить Запрет"
+            echo "4) Посмотреть статус Запрета"
+            if [[ $ZAPRET_ENABLED == false ]]; then echo "5) Добавить в автозагрузку"; fi
+            if [[ $ZAPRET_ACTIVE == false ]]; then echo "6) Включить Запрет"; fi
+            if [[ $ZAPRET_ENABLED == true ]]; then echo "7) Убрать из автозагрузки"; fi
+            if [[ $ZAPRET_ACTIVE == true ]]; then echo "8) Выключить Запрет"; fi
+            echo "9) Удалить Запрет"
+            echo "10) Выйти"
+            read -p "Выберите действие: " CHOICE
+            case "$CHOICE" in
+                1) update_zapret;;
+                2) configure_zapret;;
+                3) systemctl restart zapret;;
+                4) systemctl status zapret; read -p "Нажмите Enter для продолжения...";;
+                5) systemctl enable zapret;;
+                6) systemctl start zapret;;
+                7) systemctl disable zapret;;
+                8) systemctl stop zapret;;
+                9) uninstall_zapret;;
+                10) exit 0;;
+                *) echo "Неверный ввод!"; sleep 2;;
+            esac
+        else
+            echo "1) Установить Запрет"
+            echo "2) Выйти"
+            read -p "Выберите действие: " CHOICE
+            case "$CHOICE" in
+                1) install_zapret; main_menu;;
+                2) exit 0;;
+                *) echo "Неверный ввод!"; sleep 2;;
+            esac
+        fi
+    done
+}
 
-read -p "Вы хотите видеть логи установки? (y/n): " show_logs
-if [ "$show_logs" == "y" ]; then
-    LOG_CMD="cat"
-else
-    LOG_CMD="grep --line-buffered \"^\""
-fi
+# Установка Запрета
+install_zapret() {
+    git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs || true
+    cp -r /opt/zapret/zapret.cfgs/binaries/binaries /opt/zapret/binaries/
+    # Бинарники скомпилированные чтобы избежать лишних проблем у новичков, если боишься что с ними что то не так, сотри эту строчку и запусти скрипт еще раз, зависимости для компиляции устанавливаются 
+    git clone https://github.com/bol-van/zapret /opt/zapret
+    cd /opt/zapret
+    yes "" | ./install_easy.sh
+    configure_zapret
+}
 
-$INSTALL_CMD git libnetfilter_queue | $LOG_CMD
+# Обновление Запрета
+update_zapret() {
+    if [[ -d /opt/zapret ]]; then
+        cd /opt/zapret && git pull
+    fi
+    if [[ -d /opt/zapret/zapret.cfgs ]]; then
+        cd /opt/zapret/zapret.cfgs && git pull
+    fi
+    systemctl restart zapret
+}
 
-echo "Выберите режим установки:"
-echo "1) Автоматическая установка"
-echo "2) Ручная установка (выбор параметров самостоятельно)"
-read -p "Введите номер выбора (1 или 2): " install_mode
+# Настройка конфигурации
+configure_zapret() {
+    cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
+    cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
+    
+    echo "Выберите конфигурацию:" 
+    select CONF in /opt/zapret/zapret.cfgs/configurations/*; do
+        rm -f /opt/zapret/config
+        cp "$CONF" /opt/zapret/config
+        break
+    done
 
-echo "Выберите вариант установки:"
-echo "1) Установить чистый zapret"
-echo "2) Установить zapret с конфигами"
-read -p "Введите номер выбора (1 или 2): " choice
+    # Проверка firewall
+    if grep -q "nftables" /proc/modules; then
+        sed -i '11s/.*/FWTYPE=nftables/' /opt/zapret/config
+    fi
 
-if [ -d /opt/zapret ]; then
-    $SUDO rm -rf /opt/zapret.old
-    $SUDO mv /opt/zapret /opt/zapret.old
-fi
+    systemctl restart zapret
+}
 
-if [ "$choice" -eq 2 ]; then
-    cd /tmp || exit 1
-    git clone https://github.com/Snowy-Fluffy/zapret.cfgs.git | $LOG_CMD
-    cd /tmp/zapret.cfgs || exit 1
-    tar -xf binaries.tar
-fi
-$SUDO git clone https://github.com/bol-van/zapret /opt/zapret | $LOG_CMD
-cd /opt/zapret || exit 1
-if [ "$choice" -eq 2 ]; then
-    $SUDO cp -r /tmp/zapret.cfgs/binaries /opt/zapret/binaries
-fi
-$SUDO chmod -R 777 /opt/zapret
+# Удаление Запрета
+uninstall_zapret() {
+    if [[ -f /opt/zapret/uninstall_easy.sh ]]; then
+        cd /opt/zapret
+        yes "" | ./uninstall_easy.sh
+    fi
+    rm -rf /opt/zapret
+}
 
-if [ "$install_mode" -eq 1 ]; then
-    yes "" | $SUDO sh ./install_bin.sh | $LOG_CMD
-    yes "" | $SUDO sh ./install_prereq.sh | $LOG_CMD
-    yes "" | $SUDO sh ./install_easy.sh | $LOG_CMD
-else
-    $SUDO sh ./install_bin.sh
-    $SUDO sh ./install_prereq.sh
-    $SUDO sh ./install_easy.sh
-fi
+# Запуск главного меню
+main_menu
 
-if [ "$choice" -eq 2 ]; then
-    cd /tmp/zapret.cfgs || exit 1
-    $SUDO cp -r config /opt/zapret/config
-    $SUDO cp -r zapret-hosts-user.txt /opt/zapret/ipset/zapret-hosts-user.txt
-    $SUDO cp -r zapret-hosts-auto.txt /opt/zapret/ipset/zapret-hosts-auto.txt
-    $SUDO cp -r ipset-discord.txt /opt/zapret/ipset/ipset-discord.txt
-    $SUDO cp -r quic_initial_www_google_com.bin /opt/zapret/files/fake/quic_initial_www_google_com.bin
-    $SUDO cp -r tls_clienthello_www_google_com.bin /opt/zapret/files/fake/tls_clienthello_www_google_com.bin
-fi
-
-if command -v systemctl &> /dev/null; then
-    $SUDO systemctl restart zapret
-elif [ "$PKG_MANAGER" == "opkg" ]; then
-    $SUDO /etc/init.d/zapret restart
-else
-    echo "Не удалось автоматически перезапустить zapret. Проверьте службу вручную."
-fi
-
-echo "Установка завершена."

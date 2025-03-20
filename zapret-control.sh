@@ -110,7 +110,7 @@ install_dependencies() {
         . /etc/os-release
 
         declare -A command_by_ID=(
-            ["arch"]="pacman -S make gcc git zlib libcap \
+            ["arch"]="pacman -S --noconfirm make gcc git zlib libcap \
                             libnetfilter_queue"
             ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev \
                             libcap-dev libnetfilter-queue-dev"
@@ -208,13 +208,13 @@ install_zapret() {
     if [[ ! -d /tmp/zapret.binaries ]]; then
         echo "Клонирую релиз запрета..."
         mkdir -p /tmp/zapret.binaries
-        if ! wget -P /tmp/zapret.binaries/zapret.tar https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
+        if ! wget -P /tmp/zapret.binaries/zapret https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
             echo "Ошибка: не удалось получить релиз запрета."
             exit 1
         fi
         echo "Получение запрета завершено."
-        tar -xzf zapret-v70.4.tar.gz -C /tmp/zapret.binaries/zapret
-        cp -r /tmp/zapret.binaries/zapret/binaries /opt/zapret/binaries
+        tar -xzf /tmp/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /tmp/zapret.binaries/zapret
+        cp -r /tmp/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
 
     fi
     

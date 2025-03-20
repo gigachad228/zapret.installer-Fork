@@ -208,7 +208,7 @@ install_zapret() {
     if [[ ! -d /tmp/zapret.binaries ]]; then
         echo "Клонирую релиз запрета..."
         mkdir -p /tmp/zapret.binaries
-        if ! wget -P /tmp/zapret.binaries/zapret.tar. https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
+        if ! wget -P /tmp/zapret.binaries/zapret.tar https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
             echo "Ошибка: не удалось получить релиз запрета."
             exit 1
         fi

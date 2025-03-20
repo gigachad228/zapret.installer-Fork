@@ -60,10 +60,11 @@ main_menu() {
 
 
 install_zapret() {
-    git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs || true
-    cp -r /opt/zapret/zapret.cfgs/binaries/binaries /opt/zapret/binaries/
-    # Бинарники скомпилированные чтобы избежать лишних проблем у новичков, если боишься что с ними что то не так, сотри эту строчку и запусти скрипт еще раз, зависимости для компиляции устанавливаются 
+
     git clone https://github.com/bol-van/zapret /opt/zapret
+    git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs
+    cp -r /opt/zapret/zapret.cfgs/binaries/binaries /opt/zapret/binaries/
+    # Бинарники скомпилированные чтобы избежать лишних проблем у новичков, если боишься что с ними что то не так, сотри эту строчку и запусти скрипт еще раз, зависимости для компиляции устанавливаются
     cd /opt/zapret
     yes "" | ./install_easy.sh
     configure_zapret
@@ -82,6 +83,9 @@ update_zapret() {
 
 # Настройка конфигурации
 configure_zapret() {
+    if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
+        git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs 
+    fi
     cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
     

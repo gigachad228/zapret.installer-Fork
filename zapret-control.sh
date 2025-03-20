@@ -108,19 +108,19 @@ install_dependencies() {
         declare -A command_by_ID=(
             ["arch"]="pacman -S make gcc git zlib libcap \
                             libnetfilter_queue"
-            ["debian"]="apt install make gcc git zlib1g-dev \
+            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev \
                             libcap-dev libnetfilter-queue-dev"
-            ["fedora"]="dnf install git make gcc zlib-devel \
+            ["fedora"]="dnf install -y git make gcc zlib-devel \
                             libcap-devel libnetfilter_queue-devel"
-            ["ubuntu"]="apt install make gcc zlib1g-dev \
+            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev \
                             libcap-dev git libnetfilter-queue-dev"
-            ["mint"]="apt install make gcc zlib1g-dev \
+            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev \
                             libcap-dev git libnetfilter-queue-dev"
-            ["void"]="xpbs-install make gcc git zlib libcap \
+            ["void"]="xpbs-install -y make gcc git zlib libcap \
                             libnetfilter_queue"
-            ["gentoo"]="emerge sys-libs/zlib dev-vcs/git sys-libs/libcap \
+            ["gentoo"]="emerge --ask=n sys-libs/zlib dev-vcs/git sys-libs/libcap \
                             net-libs/libnetfilter_queue"
-            ["opensuse"]="zypper install make git gcc zlib-devel \
+            ["opensuse"]="zypper install -y make git gcc zlib-devel \
                             libcap-devel libnetfilter_queue-devel"
         )
 
@@ -226,6 +226,9 @@ update_zapret() {
     fi
     if [[ -d /opt/zapret/zapret.cfgs ]]; then
         cd /opt/zapret/zapret.cfgs && git pull
+    fi
+    if [[ -d /tmp/zapret.installer/ ]]; then
+        cd /tmp/zapret.installer/ && git pull
     fi
     systemctl restart zapret
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ ! -d /tmp/zapret.installer/ ]; then
-    cd /tmp 
+    cd /tmp || exit 
     git clone https://github.com/Snowy-Fluffy/zapret.installer.git
 fi
 cd /tmp/zapret.installer || exit

@@ -20,7 +20,7 @@ main_menu() {
         echo "===== Меню управления Запретом ====="
         if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi
-        if ! systemctl list-units --type=service | grep -q zapret.service; then
+        if [[ -d /opt/zapret ]]; then
             echo "1) Проверить на обновления"
             echo "2) Сменить конфигурацию"
             echo "3) Перезапустить Запрет"

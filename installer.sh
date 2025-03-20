@@ -1,13 +1,21 @@
 #!/bin/bash
-if [ ! -d /tmp/zapret.installer/ ]; then
-    cd /tmp || exit 
+REPO_DIR="/tmp/zapret.installer"
+
+
+if [ ! -d "$REPO_DIR" ]; then
+    cd /tmp || exit
     git clone https://github.com/Snowy-Fluffy/zapret.installer.git
+else
+    cd "$REPO_DIR" || exit
+    if ! git pull; then
+        echo "Ошибка при обновлении. Удаляю репозиторий и клонирую заново..."
+        cd /tmp || exit
+        rm -rf "$REPO_DIR"
+        git clone https://github.com/Snowy-Fluffy/zapret.installer.git
+        cd "$REPO_DIR" || exit
+    fi
 fi
 
-if [[ -d /tmp/zapret.installer/ ]]; then
-    cd /tmp/zapret.installer/ && git pull
-fi
-cd /tmp/zapret.installer || exit
 chmod +x zapret-control.sh
-bash /tmp/zapret.installer/zapret-control.sh
+bash zapret-control.sh
 

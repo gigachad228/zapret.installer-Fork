@@ -261,7 +261,7 @@ configure_zapret() {
     cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
     
-    echo "Выберите конфигурацию:" 
+    echo "Выберите стратегию:" 
     select CONF in /opt/zapret/zapret.cfgs/configurations/*; do
         rm -f /opt/zapret/config
         cp "$CONF" /opt/zapret/config
@@ -283,6 +283,8 @@ uninstall_zapret() {
         yes "" | ./uninstall_easy.sh
     fi
     rm -rf /opt/zapret
+    rm -rf /tmp/zapret.binaries/
+    rm -rf /tmp/zapret.installer/
 }
 
 # Запуск главного меню

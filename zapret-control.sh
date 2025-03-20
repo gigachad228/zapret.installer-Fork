@@ -34,12 +34,16 @@ check_zapret_status() {
         else
             ZAPRET_ACTIVE=false
         fi
-
+        
         if [[ "$ZAPRET_ENABLED" == "enabled" ]]; then
             ZAPRET_ENABLED=true
         else
             ZAPRET_ENABLED=false
-        fi;;
+        fi
+        if [[ "$ZAPRET_ENABLED" == "not-found" ]]; then
+            ZAPRET_ENABLED=false
+        fi
+        ;;
         openrc)
             rc-service zapret status >/dev/null 2>&1 && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
             rc-update show | grep -q zapret && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false

@@ -1,19 +1,18 @@
 #!/bin/bash
 
-set -e  # Выход при ошибке
+set -e  
 
-# Проверка прав суперпользователя
 if [[ $EUID -ne 0 ]]; then
     exec sudo "$0" "$@"
 fi
 
-# Проверка состояния сервиса Запрет
+
 check_zapret_status() {
     systemctl is-active --quiet zapret && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
     systemctl is-enabled --quiet zapret && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
 }
 
-# Главное меню
+
 main_menu() {
     while true; do
         clear
@@ -59,7 +58,7 @@ main_menu() {
     done
 }
 
-# Установка Запрета
+
 install_zapret() {
     git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs || true
     cp -r /opt/zapret/zapret.cfgs/binaries/binaries /opt/zapret/binaries/
@@ -70,7 +69,7 @@ install_zapret() {
     configure_zapret
 }
 
-# Обновление Запрета
+
 update_zapret() {
     if [[ -d /opt/zapret ]]; then
         cd /opt/zapret && git pull
@@ -101,7 +100,7 @@ configure_zapret() {
     systemctl restart zapret
 }
 
-# Удаление Запрета
+
 uninstall_zapret() {
     if [[ -f /opt/zapret/uninstall_easy.sh ]]; then
         cd /opt/zapret

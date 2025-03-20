@@ -7,11 +7,135 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 
-check_zapret_status() {
-    systemctl is-active --quiet zapret && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
-    systemctl is-enabled --quiet zapret && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
+detect_init() {
+    if [ -d /run/systemd/system ]; then
+        INIT_SYSTEM="systemd"
+    elif command -v openrc-init >/dev/null 2>&1; then
+        INIT_SYSTEM="openrc"
+    elif command -v runit >/dev/null 2>&1; then
+        INIT_SYSTEM="runit"
+    elif [ -x /sbin/init ] && /sbin/init --version 2>&1 | grep -q "sysvinit"; then
+        INIT_SYSTEM="sysvinit"
+    else
+        INIT_SYSTEM="unknown"
+        echo "Ваш Init не поддерживается."
+        exit 0
+    fi
 }
 
+check_zapret_status() {
+    case "$INIT_SYSTEM" in
+        systemd)
+        ZAPRET_ACTIVE=$(systemctl show -p ActiveState zapret | cut -d= -f2)
+        ZAPRET_ENABLED=$(systemctl is-enabled zapret)
+        ZAPRET_SUBSTATE=$(systemctl show -p SubState zapret | cut -d= -f2)
+        if [[ "$ZAPRET_ACTIVE" == "active" && "$ZAPRET_SUBSTATE" == "running" ]]; then
+           ZAPRET_ACTIVE=true
+        else
+            ZAPRET_ACTIVE=false
+        fi
+
+        if [[ "$ZAPRET_ENABLED" == "enabled" ]]; then
+            ZAPRET_ENABLED=true
+        else
+            ZAPRET_ENABLED=false
+        fi;;
+        openrc)
+            rc-service zapret status >/dev/null 2>&1 && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
+            rc-update show | grep -q zapret && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
+            ;;
+        runit)
+            sv status zapret >/dev/null 2>&1 && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
+            [ -L /var/service/zapret ] && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
+            ;;
+        sysvinit)
+            service zapret status >/dev/null 2>&1 && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
+            ;;
+    esac
+}
+
+manage_service() {
+    case "$INIT_SYSTEM" in
+        systemd)
+            SYSTEMD_PAGER=cat systemctl "$1" zapret
+            ;;
+        openrc)
+            rc-service zapret "$1"
+            ;;
+        runit)
+            sv "$1" zapret
+            ;;
+        sysvinit)
+            service zapret "$1"
+            ;;
+    esac
+}
+
+manage_autostart() {
+    case "$INIT_SYSTEM" in
+        systemd)
+            systemctl "$1" zapret
+            ;;
+        openrc)
+            if [[ "$1" == "enable" ]]; then
+                rc-update add zapret default
+            else
+                rc-update del zapret default
+            fi
+            ;;
+        runit)
+            if [[ "$1" == "enable" ]]; then
+                ln -s /etc/sv/zapret /var/service/
+            else
+                rm -f /var/service/zapret
+            fi
+            ;;
+        sysvinit)
+            if [[ "$1" == "enable" ]]; then
+                update-rc.d zapret defaults
+            else
+                update-rc.d -f zapret remove
+            fi
+            ;;
+    esac
+}
+
+install_dependencies() {
+    kernel="$(uname -s)"
+    if [ "$kernel" = "Linux" ]; then
+        . /etc/os-release
+
+        declare -A command_by_ID=(
+            ["arch"]="pacman -S make gcc git zlib libcap \
+                            libnetfilter_queue"
+            ["debian"]="apt install make gcc git zlib1g-dev \
+                            libcap-dev libnetfilter-queue-dev"
+            ["fedora"]="dnf install git make gcc zlib-devel \
+                            libcap-devel libnetfilter_queue-devel"
+            ["ubuntu"]="apt install make gcc zlib1g-dev \
+                            libcap-dev git libnetfilter-queue-dev"
+            ["mint"]="apt install make gcc zlib1g-dev \
+                            libcap-dev git libnetfilter-queue-dev"
+            ["void"]="xpbs-install make gcc git zlib libcap \
+                            libnetfilter_queue"
+            ["gentoo"]="emerge sys-libs/zlib dev-vcs/git sys-libs/libcap \
+                            net-libs/libnetfilter_queue"
+            ["opensuse"]="zypper install make git gcc zlib-devel \
+                            libcap-devel libnetfilter_queue-devel"
+        )
+
+        if [[ -v command_by_ID[$ID] ]]; then
+            eval "${command_by_ID[$ID]}"
+        elif [[ -v command_by_ID[$ID_LIKE] ]]; then
+            eval "${command_by_ID[$ID_LIKE]}"
+        fi
+    elif [ "$kernel" = "Darwin" ]; then
+        echo "macOS не поддерживается на данный момент." 
+    else
+        echo "Неизвестная ОС: ${kernel}"
+        exit 1
+    fi
+}
 
 main_menu() {
     while true; do
@@ -35,12 +159,12 @@ main_menu() {
             case "$CHOICE" in
                 1) update_zapret;;
                 2) configure_zapret;;
-                3) systemctl restart zapret;;
-                4) SYSTEMD_PAGER=cat systemctl status zapret; read -p "Нажмите Enter для продолжения...";;
-                5) systemctl enable zapret;;
-                6) systemctl start zapret;;
-                7) systemctl disable zapret;;
-                8) systemctl stop zapret;;
+                3) manage_service restart;;
+                4) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."';;
+                5) manage_autostart enable;;
+                6) manage_service start;;
+                7) manage_autostart disable;;
+                8) manage_service stop;;
                 9) uninstall_zapret;;
                 10) exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
@@ -60,13 +184,36 @@ main_menu() {
 
 
 install_zapret() {
+    install_dependencies
 
-    git clone https://github.com/bol-van/zapret /opt/zapret
-    git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs
-    cd /opt/zapret/zapret.cfgs/binaries
-    tar -xf binaries.tar
-    cp -r /tmp/zapret.cfgs/binaries/binaries /opt/zapret/binaries/
-    # Бинарники скомпилированные чтобы избежать лишних проблем у новичков, если боишься что с ними что то не так, сотри эту строчку и запусти скрипт еще раз, зависимости для компиляции устанавливаются
+    echo "Клонирую репозиторий..."
+    if ! git clone https://github.com/bol-van/zapret /opt/zapret ; then
+         echo "Ошибка: нестабильноe/слабое подключение к интернету."
+    exit 1
+    fi
+    echo "Клонирование успешно завершено."
+
+    echo "Клонирую репозиторий..."
+        if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
+    echo "Ошибка: нестабильноe/слабое подключение к интернету."
+    exit 1
+    fi
+    echo "Клонирование успешно завершено."
+    
+
+    if [[ ! -d /tmp/zapret.binaries ]]; then
+        echo "Клонирую релиз запрета..."
+        mkdir -p /tmp/zapret.binaries
+        if ! wget -P /tmp/zapret.binaries/zapret.tar. https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
+            echo "Ошибка: не удалось получить релиз запрета."
+            exit 1
+        fi
+        echo "Получение запрета завершено."
+        tar -xzf zapret-v70.4.tar.gz -C /tmp/zapret.binaries/zapret
+        cp -r /tmp/zapret.binaries/zapret/binaries /opt/zapret/binaries
+
+    fi
+    
     cd /opt/zapret
     yes "" | ./install_easy.sh
     configure_zapret
@@ -85,8 +232,14 @@ update_zapret() {
 
 # Настройка конфигурации
 configure_zapret() {
+    rm -rf /opt/zapret/zapret.cfgs/
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
-        git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs 
+        echo "Клонирую репозиторий..."
+        if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
+            echo "Ошибка: нестабильноe/слабое подключение к интернету."
+            exit 1
+        fi
+         echo "Клонирование успешно завершено." 
     fi
     cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
@@ -116,5 +269,6 @@ uninstall_zapret() {
 }
 
 # Запуск главного меню
-main_menu
 
+detect_init
+main_menu

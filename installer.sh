@@ -1,4 +1,13 @@
 #!/bin/bash
+
+set -e  
+
+if [[ $EUID -ne 0 ]]; then
+    exec sudo "$0" "$@"
+fi
+
+
+
 REPO_DIR="/tmp/zapret.installer"
 
 
@@ -15,7 +24,7 @@ else
         cd "$REPO_DIR" || exit
     fi
 fi
-
+cd $REPO_DIR || exit
 chmod +x zapret-control.sh
 bash zapret-control.sh
 

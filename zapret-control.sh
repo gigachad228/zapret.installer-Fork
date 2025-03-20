@@ -150,7 +150,7 @@ main_menu() {
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi
         if [[ -d /opt/zapret ]]; then
             echo "1) Проверить на обновления"
-            echo "2) Сменить конфигурацию"
+            echo "2) Сменить стратегию"
             echo "3) Перезапустить Запрет"
             echo "4) Посмотреть статус Запрета"
             if [[ $ZAPRET_ENABLED == false ]]; then echo "5) Добавить в автозагрузку"; fi
@@ -239,15 +239,19 @@ update_zapret() {
 
 # Настройка конфигурации
 configure_zapret() {
-    rm -rf /opt/zapret/zapret.cfgs/
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
-        echo "Клонирую репозиторий..."
+        echo "Клонирую стратегии..."
         if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
             echo "Ошибка: нестабильноe/слабое подключение к интернету."
             exit 1
         fi
          echo "Клонирование успешно завершено." 
     fi
+    if [[ -d /opt/zapret/zapret.cfgs ]]; then
+        echo "Проверяю наличие на обновление стратегий..."
+        cd /opt/zapret/zapret.cfgs && git pull
+    fi
+
     cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
     

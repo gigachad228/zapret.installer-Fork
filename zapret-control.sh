@@ -217,6 +217,11 @@ install_zapret() {
         cp -r /tmp/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
 
     fi
+    if [[ ! -d /opt/zapret/binaries ]]; then
+        tar -xzf /tmp/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /tmp/zapret.binaries/zapret
+        cp -r /tmp/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
+    fi
+     
     
     cd /opt/zapret
     yes "" | ./install_easy.sh

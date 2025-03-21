@@ -241,7 +241,7 @@ main_menu() {
             read -p "Выберите действие: " CHOICE
             case "$CHOICE" in
                 1) install_zapret; main_menu;;
-                2) update_zapret;;
+                2) update_script;;
                 3) exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
@@ -303,6 +303,16 @@ update_zapret() {
         cd /tmp/zapret.installer/ && git pull
     fi
     systemctl restart zapret
+}
+
+update_script() {
+    if [[ -d /opt/zapret/zapret.cfgs ]]; then
+        cd /opt/zapret/zapret.cfgs && git pull
+    fi
+    if [[ -d /tmp/zapret.installer/ ]]; then
+        cd /tmp/zapret.installer/ && git pull
+    fi
+
 }
 
 # Настройка конфигурации

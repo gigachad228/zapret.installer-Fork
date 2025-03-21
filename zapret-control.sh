@@ -236,11 +236,13 @@ main_menu() {
             esac
         else
             echo "1) Установить Запрет"
-            echo "2) Выйти"
+            echo "2) Проверить скрипт на обновления"
+            echo "3) Выйти"
             read -p "Выберите действие: " CHOICE
             case "$CHOICE" in
                 1) install_zapret; main_menu;;
-                2) exit 0;;
+                2) update_zapret;;
+                3) exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         fi

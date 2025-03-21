@@ -171,19 +171,19 @@ install_dependencies() {
         declare -A command_by_ID=(
             ["arch"]="pacman -S --noconfirm make gcc git zlib libcap ipset \
                             libnetfilter_queue"
-            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev ipset  \
+            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev ipset iptables \
                             libcap-dev libnetfilter-queue-dev"
-            ["fedora"]="dnf install -y git make gcc zlib-devel ipset \
+            ["fedora"]="dnf install -y git make gcc zlib-devel ipset iptables \
                             libcap-devel libnetfilter_queue-devel"
-            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ipset \
+            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ipset iptables \
                             libcap-dev git libnetfilter-queue-dev"
-            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ipset  \
+            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ipset iptables \
                             libcap-dev git libnetfilter-queue-dev"
-            ["void"]="xpbs-install -y make gcc git zlib libcap ipset \
+            ["void"]="xpbs-install -y make gcc git zlib libcap ipset iptables \
                             libnetfilter_queue"
             ["gentoo"]="emerge --ask=n sys-libs/zlib dev-vcs/git net-firewall/iptables net-firewall/ipset sys-libs/libcap  \
                             net-libs/libnetfilter_queue"
-            ["opensuse"]="zypper install -y make git gcc zlib-devel ipset \
+            ["opensuse"]="zypper install -y make git gcc zlib-devel ipset iptables \
                             libcap-devel libnetfilter_queue-devel"
         )
 

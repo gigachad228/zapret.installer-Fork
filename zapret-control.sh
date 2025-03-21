@@ -58,8 +58,6 @@ check_zapret_status() {
     esac
 }
 
-#!/bin/bash
-
 
 exists() {
     command -v "$1" >/dev/null 2>&1
@@ -169,7 +167,7 @@ install_dependencies() {
         . /etc/os-release
 
         declare -A command_by_ID=(
-            ["arch"]="pacman -S --noconfirm make gcc git zlib libcap ipset \
+            ["arch"]="pacman -S --noconfirm make gcc git libcap ipset \
                             libnetfilter_queue"
             ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev ipset iptables \
                             libcap-dev libnetfilter-queue-dev"
@@ -333,13 +331,27 @@ configure_zapret() {
     cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
     
-    echo "Выберите стратегию:" 
-    select CONF in /opt/zapret/zapret.cfgs/configurations/*; do
-        rm -f /opt/zapret/config
-        cp "$CONF" /opt/zapret/config
-        break
+#    echo "Выберите стратегию:" 
+#    select CONF in /opt/zapret/zapret.cfgs/configurations/*; do
+#        rm -f /opt/zapret/config
+#        cp "$CONF" /opt/zapret/config
+#        break
+#    done
+    echo "Выберите стратегию:"
+    PS3="Введите номер стратегии: "
+    select CONF in /opt/zapret/zapret.cfgs/configurations/* "Отмена"; do
+        if [[ "$CONF" == "Отмена" ]]; then
+            main_menu
+        elif [[ -n "$CONF" ]]; then
+            rm -f /opt/zapret/config
+            cp "$CONF" /opt/zapret/config
+            echo "Конфигурация '$CONF' установлена."
+            break
+        else
+            echo "Неверный выбор, попробуйте снова."
+        fi
     done
-    
+   
     get_fwtype
 
     sed -i "s/^FWTYPE=.*/FWTYPE=$FWTYPE/" /opt/zapret/config

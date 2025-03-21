@@ -58,6 +58,65 @@ check_zapret_status() {
     esac
 }
 
+#!/bin/bash
+
+
+exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+get_fwtype() {
+    [ -n "$FWTYPE" ] && return
+
+    local UNAME="$(uname)"
+
+    case "$UNAME" in
+        Linux)
+
+            if exists iptables; then
+                iptables_version=$(iptables -V 2>&1)
+
+                if [[ "$iptables_version" == *"legacy"* ]]; then
+                    FWTYPE="iptables"
+                elif [[ "$iptables_version" == *"nf_tables"* ]]; then
+                    FWTYPE="nftables"
+                else
+                    echo "Не удалось определить файрвол. По умолчанию установлен iptables, вы его можете изменить в файле /opt/zapret/config."
+                    echo "Продолжаю через 5 секунд..."
+                    FWTYPE="iptables"
+                    sleep 5
+                fi
+            else
+                echo "Не удалось определить файрвол. По умолчанию установлен iptables, вы его можете изменить в файле /opt/zapret/config."
+                echo "Продолжаю через 5 секунд..."
+                
+                FWTYPE="iptables"
+                sleep 5
+            fi
+            ;;
+        FreeBSD)
+            if exists ipfw ; then
+                FWTYPE="ipfw"
+            else
+                echo "Не удалось определить файрвол. По умолчанию установлен iptables, вы его можете изменить в файле /opt/zapret/config."
+                echo "Продолжаю через 5 секунд..."
+                
+                FWTYPE="iptables"
+                sleep 5
+            fi
+            ;;
+        *)
+        echo "Не удалось определить файрвол. По умолчанию установлен iptables, вы его можете изменить в файле /opt/zapret/config."
+        echo "Продолжаю через 5 секунд..."
+        
+        FWTYPE="iptables"
+        sleep 5
+            ;;
+    esac
+
+}
+
+
 manage_service() {
     case "$INIT_SYSTEM" in
         systemd)
@@ -110,21 +169,21 @@ install_dependencies() {
         . /etc/os-release
 
         declare -A command_by_ID=(
-            ["arch"]="pacman -S --noconfirm make gcc git zlib libcap \
+            ["arch"]="pacman -S --noconfirm make gcc git zlib libcap ip6tables \
                             libnetfilter_queue"
-            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev \
+            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev ip6tables \
                             libcap-dev libnetfilter-queue-dev"
-            ["fedora"]="dnf install -y git make gcc zlib-devel \
+            ["fedora"]="dnf install -y git make gcc zlib-devel ip6tables \
                             libcap-devel libnetfilter_queue-devel"
-            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev \
+            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-devip6tables \
                             libcap-dev git libnetfilter-queue-dev"
-            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev \
+            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ip6tables \
                             libcap-dev git libnetfilter-queue-dev"
-            ["void"]="xpbs-install -y make gcc git zlib libcap \
+            ["void"]="xpbs-install -y make gcc git zlib libcap ip6tables \
                             libnetfilter_queue"
-            ["gentoo"]="emerge --ask=n sys-libs/zlib dev-vcs/git sys-libs/libcap \
+            ["gentoo"]="emerge --ask=n sys-libs/zlib dev-vcs/git net-firewall/iptables sys-libs/libcap  \
                             net-libs/libnetfilter_queue"
-            ["opensuse"]="zypper install -y make git gcc zlib-devel \
+            ["opensuse"]="zypper install -y make git gcc zlib-devel ip6tables \
                             libcap-devel libnetfilter_queue-devel"
         )
 
@@ -135,6 +194,7 @@ install_dependencies() {
         fi
     elif [ "$kernel" = "Darwin" ]; then
         echo "macOS не поддерживается на данный момент." 
+        exit 1
     else
         echo "Неизвестная ОС: ${kernel}"
         exit 1
@@ -267,17 +327,22 @@ configure_zapret() {
         cp "$CONF" /opt/zapret/config
         break
     done
+    
+    get_fwtype
 
-    # Проверка firewall
-    if grep -q "nftables" /proc/modules; then
-        sed -i '11s/.*/FWTYPE=nftables/' /opt/zapret/config
-    fi
+    sed -i "s/^FWTYPE=.*/FWTYPE=$FWTYPE/" /opt/zapret/config
+
 
     systemctl restart zapret
 }
 
 
 uninstall_zapret() {
+    read -p "Вы действительно хотите удалить запрет? (y/N): " answer
+    case "$answer" in
+        [Yy]* ) return ;;  
+        * ) main_menu ;;    
+    esac
     if [[ -f /opt/zapret/uninstall_easy.sh ]]; then
         cd /opt/zapret
         yes "" | ./uninstall_easy.sh
@@ -286,8 +351,6 @@ uninstall_zapret() {
     rm -rf /tmp/zapret.binaries/
     rm -rf /tmp/zapret.installer/
 }
-
-# Запуск главного меню
 
 detect_init
 main_menu

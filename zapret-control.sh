@@ -315,7 +315,6 @@ update_script() {
 
 # Настройка конфигурации
 configure_zapret() {
-    clear
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
         echo "Клонирую стратегии..."
         if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
@@ -331,7 +330,7 @@ configure_zapret() {
 
     cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
-    
+    clear
 #    echo "Выберите стратегию:" 
 #    select CONF in /opt/zapret/zapret.cfgs/configurations/*; do
 #        rm -f /opt/zapret/config

@@ -169,21 +169,21 @@ install_dependencies() {
         . /etc/os-release
 
         declare -A command_by_ID=(
-            ["arch"]="pacman -S --noconfirm make gcc git zlib libcap ip6tables \
+            ["arch"]="pacman -S --noconfirm make gcc git zlib libcap  \
                             libnetfilter_queue"
-            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev ip6tables \
+            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc git zlib1g-dev  \
                             libcap-dev libnetfilter-queue-dev"
-            ["fedora"]="dnf install -y git make gcc zlib-devel ip6tables \
+            ["fedora"]="dnf install -y git make gcc zlib-devel  \
                             libcap-devel libnetfilter_queue-devel"
-            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-devip6tables \
+            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev \
                             libcap-dev git libnetfilter-queue-dev"
-            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ip6tables \
+            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev  \
                             libcap-dev git libnetfilter-queue-dev"
-            ["void"]="xpbs-install -y make gcc git zlib libcap ip6tables \
+            ["void"]="xpbs-install -y make gcc git zlib libcap  \
                             libnetfilter_queue"
             ["gentoo"]="emerge --ask=n sys-libs/zlib dev-vcs/git net-firewall/iptables sys-libs/libcap  \
                             net-libs/libnetfilter_queue"
-            ["opensuse"]="zypper install -y make git gcc zlib-devel ip6tables \
+            ["opensuse"]="zypper install -y make git gcc zlib-devel  \
                             libcap-devel libnetfilter_queue-devel"
         )
 

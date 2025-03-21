@@ -337,20 +337,25 @@ configure_zapret() {
 }
 
 
+
 uninstall_zapret() {
     read -p "Вы действительно хотите удалить запрет? (y/N): " answer
     case "$answer" in
-        [Yy]* ) return ;;  
-        * ) main_menu ;;    
+        [Yy]* ) 
+            if [[ -f /opt/zapret/uninstall_easy.sh ]]; then
+                cd /opt/zapret
+                yes "" | ./uninstall_easy.sh
+            fi
+            rm -rf /opt/zapret
+            rm -rf /tmp/zapret.binaries/
+            rm -rf /tmp/zapret.installer/
+            ;;
+        * ) 
+            main_menu
+            ;;
     esac
-    if [[ -f /opt/zapret/uninstall_easy.sh ]]; then
-        cd /opt/zapret
-        yes "" | ./uninstall_easy.sh
-    fi
-    rm -rf /opt/zapret
-    rm -rf /tmp/zapret.binaries/
-    rm -rf /tmp/zapret.installer/
 }
+
 
 detect_init
 main_menu

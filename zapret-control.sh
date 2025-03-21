@@ -315,6 +315,7 @@ update_script() {
 
 # Настройка конфигурации
 configure_zapret() {
+    clear
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
         echo "Клонирую стратегии..."
         if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
@@ -358,6 +359,7 @@ configure_zapret() {
 
 
     systemctl restart zapret
+    main_menu
 }
 
 

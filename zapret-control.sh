@@ -251,7 +251,7 @@ main_menu() {
         echo "===== Меню управления Запретом ====="
         if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi 
-        if [[ $ZAPRET_EXIST == false ]]; then clear; echo "!Запрет не установлен!"; fi
+        if [[ $ZAPRET_EXIST == false ]]; then clear; echo "===== Меню управления Запретом ====="; echo "!Запрет не установлен!"; fi
         if [[ $ZAPRET_EXIST == true ]]; then
             echo "1) Проверить на обновления"
             echo "2) Сменить стратегию"
@@ -395,7 +395,7 @@ configure_zapret() {
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
     clear
 
-    echo "Выберите стратегию:"
+    echo "Выберите стратегию (можно поменять в любой момент, запустив скрипт еще раз):"
     PS3="Введите номер стратегии: "
     select CONF in /opt/zapret/zapret.cfgs/configurations/* "Отмена"; do
         if [[ "$CONF" == "Отмена" ]]; then

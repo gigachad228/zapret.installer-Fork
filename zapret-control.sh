@@ -23,6 +23,50 @@ detect_init() {
     fi
 }
 
+check_zapret_exist() {
+
+    case "$INIT_SYSTEM" in
+        systemd)
+            if [ -f /etc/systemd/system/multi-user.target.wants/zapret.service ] && \
+               [ -f /etc/systemd/system/timers.target.wants/zapret-list-update.timer ]; then
+                service_exists=true
+            else
+                service_exists=false
+            fi
+            ;;
+        openrc)
+            rc-service -l | grep -q "zapret" && service_exists=true || service_exists=false
+            ;;
+        runit)
+            [ -d /etc/service/zapret ] && service_exists=true || service_exists=false
+            ;;
+        sysvinit)
+            [ -f /etc/init.d/zapret ] && service_exists=true || service_exists=false
+            ;;
+        *)
+            echo "false"
+            return
+            ;;
+    esac
+
+
+    if [ -d /opt/zapret ]; then
+        dir_exists=true
+        [ -d /opt/zapret/binaries ] && binaries_exists=true || binaries_exists=false
+    else
+        dir_exists=false
+        binaries_exists=false
+    fi
+
+
+    if [ "$service_exists" = true ] && [ "$dir_exists" = true ] && [ "$binaries_exists" = true ]; then
+        ZAPRET_EXIST=true
+    else
+        ZAPRET_EXIST=false
+    fi
+}
+
+
 check_zapret_status() {
     case "$INIT_SYSTEM" in
         systemd)
@@ -203,11 +247,12 @@ main_menu() {
     while true; do
         clear
         check_zapret_status
+        check_zapret_exist
         echo "===== Меню управления Запретом ====="
         if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi 
-        if [[ ! -d /opt/zapret ]]; then echo "!Запрет не установлен!"; fi
-        if [[ -d /opt/zapret ]]; then
+        if [[ $ZAPRET_EXIST == false ]]; then clear; echo "!Запрет не установлен!"; fi
+        if [[ $ZAPRET_EXIST == true ]]; then
             echo "1) Проверить на обновления"
             echo "2) Сменить стратегию"
             echo "3) Перезапустить Запрет"
@@ -250,6 +295,23 @@ main_menu() {
 
 install_zapret() {
     install_dependencies
+    if [[ $dir_exists == true ]]; then
+        read -p "На вашем компьютере был найден запрет (/opt/zapret). Для продолжения его необходимо удалить. Вы дествительно хотите удалить запрет (/opt/zapret) и продолжить? (y/N): " answer
+        case "$answer" in
+            [Yy]* ) 
+                if [[ -f /opt/zapret/uninstall_easy.sh ]]; then
+                    cd /opt/zapret
+                    yes "" | ./uninstall_easy.sh
+                fi
+                rm -rf /opt/zapret
+
+                ;;
+            * ) 
+                main_menu
+                ;;
+        esac
+    fi
+    
 
     echo "Клонирую репозиторий..."
     if ! git clone https://github.com/bol-van/zapret /opt/zapret ; then
@@ -301,6 +363,7 @@ update_zapret() {
         cd /tmp/zapret.installer/ && git pull
     fi
     systemctl restart zapret
+    sleep 2
 }
 
 update_script() {
@@ -313,7 +376,7 @@ update_script() {
 
 }
 
-# Настройка конфигурации
+
 configure_zapret() {
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
         echo "Клонирую стратегии..."
@@ -331,12 +394,7 @@ configure_zapret() {
     cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
     cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
     clear
-#    echo "Выберите стратегию:" 
-#    select CONF in /opt/zapret/zapret.cfgs/configurations/*; do
-#        rm -f /opt/zapret/config
-#        cp "$CONF" /opt/zapret/config
-#        break
-#    done
+
     echo "Выберите стратегию:"
     PS3="Введите номер стратегии: "
     select CONF in /opt/zapret/zapret.cfgs/configurations/* "Отмена"; do
@@ -346,6 +404,7 @@ configure_zapret() {
             rm -f /opt/zapret/config
             cp "$CONF" /opt/zapret/config
             echo "Конфигурация '$CONF' установлена."
+            sleep 2
             break
         else
             echo "Неверный выбор, попробуйте снова."

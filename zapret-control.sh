@@ -27,8 +27,7 @@ check_zapret_exist() {
 
     case "$INIT_SYSTEM" in
         systemd)
-            if [ -f /etc/systemd/system/multi-user.target.wants/zapret.service ] && \
-               [ -f /etc/systemd/system/timers.target.wants/zapret-list-update.timer ]; then
+            if [ -f /etc/systemd/system/timers.target.wants/zapret-list-update.timer ]; then
                 service_exists=true
             else
                 service_exists=false

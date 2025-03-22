@@ -44,7 +44,7 @@ check_zapret_exist() {
             [ -f /etc/init.d/zapret ] && service_exists=true || service_exists=false
             ;;
         *)
-            echo "false"
+            ZAPRET_EXIST=false
             return
             ;;
     esac

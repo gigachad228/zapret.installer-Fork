@@ -357,7 +357,6 @@ install_zapret() {
     rm -f /opt/zapret/ipset/zapret-hosts-user.txt
     cp -r /opt/zapret/zapret.cfgs/lists/list-basic.txt /opt/zapret/ipset/zapret-hosts-user.txt || exit
     manage_service restart
-    configure_zapret_list
     configure_zapret_conf
     
 }

@@ -242,6 +242,26 @@ install_dependencies() {
     fi
 }
 
+add_to_zapret() {
+    read -p "Введите IP-адреса или домены для добавления в лист (разделяйте пробелами, запятыми или |): " input
+
+    IFS=',| ' read -ra ADDRESSES <<< "$input"
+
+    for address in "${ADDRESSES[@]}"; do
+        address=$(echo "$address" | xargs)
+        if [[ -n "$address" && ! $(grep -Fxq "$address" "/opt/zapret/ipset/zapret-hosts-user.txt") ]]; then
+            echo "$address" >> "/opt/zapret/ipset/zapret-hosts-user.txt"
+            echo "Добавлено: $address"
+        else
+            echo "Уже существует: $address"
+        fi
+    done
+
+    echo "Готово"
+    sleep 2
+    main_menu
+}
+
 main_menu() {
     while true; do
         clear
@@ -254,26 +274,28 @@ main_menu() {
         if [[ $ZAPRET_EXIST == true ]]; then
             echo "1) Проверить на обновления"
             echo "2) Сменить стратегию"
-            echo "3) Перезапустить Запрет"
-            echo "4) Посмотреть статус Запрета"
-            if [[ $ZAPRET_ENABLED == false ]]; then echo "5) Добавить в автозагрузку"; fi
-            if [[ $ZAPRET_ACTIVE == false ]]; then echo "6) Включить Запрет"; fi
-            if [[ $ZAPRET_ENABLED == true ]]; then echo "7) Убрать из автозагрузки"; fi
-            if [[ $ZAPRET_ACTIVE == true ]]; then echo "8) Выключить Запрет"; fi
-            echo "9) Удалить Запрет"
-            echo "10) Выйти"
+            echo "3) Добавить ip-адреса или домены в лист обхода"
+            echo "4) Перезапустить Запрет"
+            echo "5) Посмотреть статус Запрета"
+            if [[ $ZAPRET_ENABLED == false ]]; then echo "6) Добавить в автозагрузку"; fi
+            if [[ $ZAPRET_ACTIVE == false ]]; then echo "7) Включить Запрет"; fi
+            if [[ $ZAPRET_ENABLED == true ]]; then echo "8) Убрать из автозагрузки"; fi
+            if [[ $ZAPRET_ACTIVE == true ]]; then echo "9) Выключить Запрет"; fi
+            echo "10) Удалить Запрет"
+            echo "11) Выйти"
             read -p "Выберите действие: " CHOICE
             case "$CHOICE" in
                 1) update_zapret;;
                 2) configure_zapret;;
-                3) manage_service restart;;
-                4) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."';;
-                5) manage_autostart enable;;
-                6) manage_service start;;
-                7) manage_autostart disable;;
-                8) manage_service stop;;
-                9) uninstall_zapret;;
-                10) exit 0;;
+                3) add_to_zapret;;
+                4) manage_service restart;;
+                5) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."';;
+                6) manage_autostart enable;;
+                7) manage_service start;;
+                8) manage_autostart disable;;
+                9) manage_service stop;;
+                10) uninstall_zapret;;
+                11) exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         else

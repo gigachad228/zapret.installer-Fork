@@ -2,6 +2,13 @@
 
 set -e  
 
+if command -v git &> /dev/null; then
+    echo ""
+else
+    echo "Команда git не найдена. Установите пакет git вручную"
+    exit 1
+fi
+
 if [ "$(id -u)" -eq 0 ]; then
     SUDO=""
 else

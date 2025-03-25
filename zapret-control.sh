@@ -274,7 +274,7 @@ main_menu() {
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi 
         if [[ $ZAPRET_EXIST == false ]]; then clear; echo "===== Меню управления Запретом ====="; echo "!Запрет не установлен!"; fi
         if [[ $ZAPRET_EXIST == true ]]; then
-            echo "1) Проверить на обновления"
+            echo "1) Проверить на обновления и обновить"
             echo "2) Сменить стратегию"
             echo "3) Добавить ip-адреса или домены в лист обхода"
             echo "4) Перезапустить Запрет"

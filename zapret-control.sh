@@ -474,13 +474,13 @@ configure_zapret_conf() {
     PS3="Введите номер стратегии (по умолчанию 6): "
 
     select CONF in /opt/zapret/zapret.cfgs/configurations/* "Отмена"; do
-        REPLY=${REPLY:-6}
+
     
         if [[ "$CONF" == "Отмена" ]]; then
             main_menu
         elif [[ -n "$CONF" ]]; then
             rm -f /opt/zapret/config
-            cp "/opt/zapret/zapret.cfgs/configurations/$CONF" /opt/zapret/config
+            cp "$CONF" /opt/zapret/config
             echo "Стратегия '$CONF' установлена."
             sleep 2
             break

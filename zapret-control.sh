@@ -356,6 +356,7 @@ install_zapret() {
     cp -r /opt/zapret/zapret.cfgs/configurations/general /opt/zapret/config || exit
     rm -f /opt/zapret/ipset/zapret-hosts-user.txt
     cp -r /opt/zapret/zapret.cfgs/lists/list-basic.txt /opt/zapret/ipset/zapret-hosts-user.txt || exit
+    cp -r /opt/zapret/zapret.cfgs/lists/ipset-discord.txt /opt/zapret/ipset/ipset-discord.txt || exit
     manage_service restart
     configure_zapret_conf
     

@@ -256,6 +256,8 @@ add_to_zapret() {
             echo "Уже существует: $address"
         fi
     done
+    
+    manage_service restart
 
     echo "Готово"
     sleep 2
@@ -437,8 +439,8 @@ configure_zapret() {
 
     sed -i "s/^FWTYPE=.*/FWTYPE=$FWTYPE/" /opt/zapret/config
 
-
-    systemctl restart zapret
+    manage_service restart
+    
     main_menu
 }
 

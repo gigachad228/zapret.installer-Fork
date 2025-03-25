@@ -398,7 +398,7 @@ update_zapret() {
         chmod +x /bin/zapret
     fi
     manage_service restart
-    sleep 2
+    bash -c 'read -p "Нажмите Enter для продолжения..."'
     exec sudo "$0" "$@"
 }
 
@@ -409,7 +409,7 @@ update_script() {
     if [[ -d /opt/zapret.installer/ ]]; then
         cd /opt/zapret.installer/ && git pull
     fi
-
+    bash -c 'read -p "Нажмите Enter для продолжения..."'
     exec sudo "$0" "$@"
 }
 
@@ -479,8 +479,11 @@ search_in_zapret() {
     if [[ -n "$matches" ]]; then
         echo "Найденные записи:"
         echo "$matches"
+        bash -c 'read -p "Нажмите Enter для продолжения..."'
     else
         echo "Совпадений не найдено."
+        sleep 2
+        main_menu
     fi
 }
 

@@ -213,11 +213,11 @@ install_dependencies() {
             ["arch"]="pacman -S --noconfirm make gcc wget libcap ipset \
                             libnetfilter_queue"
             ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ipset iptables \
-                            libcap-dev wget libnetfilter-queue-dev"
+                            libcap-dev wget"
             ["fedora"]="dnf install -y make gcc zlib-devel ipset iptables \
-                            libcap-devel wget libnetfilter_queue-devel"
+                            libcap-devel wget"
             ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev wget ipset iptables \
-                            libcap-dev libnetfilter-queue-dev"
+                            libcap-dev"
             ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc wget zlib1g-dev ipset iptables \
                             libcap-dev git libnetfilter-queue-dev"
             ["void"]="xpbs-install -y make gcc git zlib libcap wget ipset iptables \
@@ -468,7 +468,7 @@ delete_from_zapret() {
 }
 
 search_in_zapret() {
-    read -p "Введите слово для поиска в хостлисте (Enter для отмены): " keyword
+    read -p "Введите домен или IP-адрес для поиска в хостлисте (Enter для отмены): " keyword
 
     if [[ -z "$keyword" ]]; then
         main_menu

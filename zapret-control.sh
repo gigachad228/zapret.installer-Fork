@@ -473,15 +473,15 @@ configure_zapret_conf() {
     echo "Выберите стратегию (можно поменять в любой момент, запустив Меню управления запретом еще раз):"
     PS3="Введите номер стратегии (по умолчанию 6): "
 
-    select LIST in $(basename -a /opt/zapret/zapret.cfgs/configurations/*) "Отмена"; do
+    select CONF in /opt/zapret/zapret.cfgs/configurations/* "Отмена"; do
         REPLY=${REPLY:-6}
     
-        if [[ "$LIST" == "Отмена" ]]; then
+        if [[ "$CONF" == "Отмена" ]]; then
             main_menu
-        elif [[ -n "$LIST" ]]; then
+        elif [[ -n "$CONF" ]]; then
             rm -f /opt/zapret/config
-            cp "/opt/zapret/zapret.cfgs/configurations/$LIST" /opt/zapret/config
-            echo "Стратегия '$LIST' установлена."
+            cp "/opt/zapret/zapret.cfgs/configurations/$CONF" /opt/zapret/config
+            echo "Стратегия '$CONF' установлена."
             sleep 2
             break
         else
@@ -519,7 +519,7 @@ configure_zapret_list() {
 
     echo "Выберите хостлист (можно поменять в любой момент, запустив Меню управления запретом еще раз):"
     PS3="Введите номер листа: "
-    select LIST in $(basename -a /opt/zapret/zapret.cfgs/lists/list*) "Отмена"; do
+    select LIST in /opt/zapret/zapret.cfgs/lists/list* "Отмена"; do
         if [[ "$LIST" == "Отмена" ]]; then
             main_menu
         elif [[ -n "$LIST" ]]; then

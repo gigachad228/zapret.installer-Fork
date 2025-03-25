@@ -352,7 +352,11 @@ install_zapret() {
     yes "" | ./install_easy.sh
     cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit 
     chmod +x /bin/zapret
-    
+    rm -f /opt/zapret/config 
+    cp -r /opt/zapret/zapret.cfgs/configurations/general /opt/zapret/config || exit
+    rm -f /opt/zapret/ipset/zapret-hosts-user.txt
+    cp -r /opt/zapret/zapret.cfgs/lists/list-basic.txt /opt/zapret/ipset/zapret-hosts-user.txt || exit
+    manage_service restart
     configure_zapret_list
     configure_zapret_conf
     
@@ -392,7 +396,7 @@ update_zapret() {
         cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit
         chmod +x /bin/zapret
     fi
-    systemctl restart zapret
+    manage_service restart
     sleep 2
 }
 
@@ -435,11 +439,13 @@ delete_from_zapret() {
 
     for address in "${ADDRESSES[@]}"; do
         address=$(echo "$address" | xargs)
-        if [[ -n "$address" && $(grep -Fxq "$address" "/opt/zapret/ipset/zapret-hosts-user.txt") ]]; then
-            sed -i "/^$address$/d" "/opt/zapret/ipset/zapret-hosts-user.txt"
-            echo "Удалено: $address"
-        else
-            echo "Не найдено: $address"
+        if [[ -n "$address" ]]; then
+            if grep -Fxq "$address" "/opt/zapret/ipset/zapret-hosts-user.txt"; then
+                sed -i "\|^$address\$|d" "/opt/zapret/ipset/zapret-hosts-user.txt"
+                echo "Удалено: $address"
+            else
+                echo "Не найдено: $address"
+            fi
         fi
     done
 
@@ -449,7 +455,6 @@ delete_from_zapret() {
     sleep 2
     main_menu
 }
-
 
 configure_zapret_conf() {
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
@@ -518,7 +523,7 @@ configure_zapret_list() {
     clear
 
     echo "Выберите хостлист (можно поменять в любой момент, запустив Меню управления запретом еще раз):"
-    PS3="Введите номер листа: "
+    PS3="Введите номер листа (по умолчанию 2): "
     select LIST in /opt/zapret/zapret.cfgs/lists/list* "Отмена"; do
         if [[ "$LIST" == "Отмена" ]]; then
             main_menu

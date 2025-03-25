@@ -242,27 +242,7 @@ install_dependencies() {
     fi
 }
 
-add_to_zapret() {
-    read -p "Введите IP-адреса или домены для добавления в лист (разделяйте пробелами, запятыми или |): " input
 
-    IFS=',| ' read -ra ADDRESSES <<< "$input"
-
-    for address in "${ADDRESSES[@]}"; do
-        address=$(echo "$address" | xargs)
-        if [[ -n "$address" && ! $(grep -Fxq "$address" "/opt/zapret/ipset/zapret-hosts-user.txt") ]]; then
-            echo "$address" >> "/opt/zapret/ipset/zapret-hosts-user.txt"
-            echo "Добавлено: $address"
-        else
-            echo "Уже существует: $address"
-        fi
-    done
-    
-    manage_service restart
-
-    echo "Готово"
-    sleep 2
-    main_menu
-}
 
 main_menu() {
     while true; do
@@ -275,29 +255,27 @@ main_menu() {
         if [[ $ZAPRET_EXIST == false ]]; then clear; echo "===== Меню управления Запретом ====="; echo "!Запрет не установлен!"; fi
         if [[ $ZAPRET_EXIST == true ]]; then
             echo "1) Проверить на обновления и обновить"
-            echo "2) Сменить стратегию"
-            echo "3) Добавить ip-адреса или домены в лист обхода"
-            echo "4) Перезапустить Запрет"
-            echo "5) Посмотреть статус Запрета"
-            if [[ $ZAPRET_ENABLED == false ]]; then echo "6) Добавить в автозагрузку"; fi
-            if [[ $ZAPRET_ACTIVE == false ]]; then echo "7) Включить Запрет"; fi
-            if [[ $ZAPRET_ENABLED == true ]]; then echo "8) Убрать из автозагрузки"; fi
-            if [[ $ZAPRET_ACTIVE == true ]]; then echo "9) Выключить Запрет"; fi
-            echo "10) Удалить Запрет"
-            echo "11) Выйти"
+            echo "2) Сменить конфигурацию запрета"
+            echo "3) Перезапустить Запрет"
+            echo "4) Посмотреть статус Запрета"
+            if [[ $ZAPRET_ENABLED == false ]]; then echo "5) Добавить в автозагрузку"; fi
+            if [[ $ZAPRET_ACTIVE == false ]]; then echo "6) Включить Запрет"; fi
+            if [[ $ZAPRET_ENABLED == true ]]; then echo "7) Убрать из автозагрузки"; fi
+            if [[ $ZAPRET_ACTIVE == true ]]; then echo "8) Выключить Запрет"; fi
+            echo "9) Удалить Запрет"
+            echo "10) Выйти"
             read -p "Выберите действие: " CHOICE
             case "$CHOICE" in
                 1) update_zapret;;
-                2) configure_zapret;;
-                3) add_to_zapret;;
-                4) manage_service restart;;
-                5) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."';;
-                6) manage_autostart enable;;
-                7) manage_service start;;
-                8) manage_autostart disable;;
-                9) manage_service stop;;
-                10) uninstall_zapret;;
-                11) exit 0;;
+                2) change_configuration;;
+                3) manage_service restart;;
+                4) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."';;
+                5) manage_autostart enable;;
+                6) manage_service start;;
+                7) manage_autostart disable;;
+                8) manage_service stop;;
+                9) uninstall_zapret;;
+                10) exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         else
@@ -368,14 +346,38 @@ install_zapret() {
         cp -r /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
     fi
      
-    
+    cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
+
     cd /opt/zapret
     yes "" | ./install_easy.sh
     cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit 
     chmod +x /bin/zapret
-    configure_zapret
+    
+    configure_zapret_list
+    configure_zapret_conf
+    
 }
 
+change_configuration(){
+    while true; do
+        clear
+        echo "===== Меню управления Запретом ====="
+        echo "1) Сменить стратегию"
+        echo "2) Сменить лист обхода"
+        echo "3) Добавить ip-адреса или домены в лист обхода"
+        echo "4) Удалить ip-адреса или домены из листа обхода"
+        echo "5) Выйти в меню"
+        read -p "Выберите действие: " CHOICE
+        case "$CHOICE" in
+            1) configure_zapret_conf;;
+            2) configure_zapret_list;;
+            3) add_to_zapret;;
+            4) delete_from_zapret;;
+            5) main_menu;;
+            *) echo "Неверный ввод!"; sleep 2;;
+        esac
+    done
+}
 
 update_zapret() {
     if [[ -d /opt/zapret ]]; then
@@ -404,40 +406,89 @@ update_script() {
 
 }
 
+add_to_zapret() {
+    read -p "Введите IP-адреса или домены для добавления в лист (разделяйте пробелами, запятыми или |): " input
 
-configure_zapret() {
+    IFS=',| ' read -ra ADDRESSES <<< "$input"
+
+    for address in "${ADDRESSES[@]}"; do
+        address=$(echo "$address" | xargs)
+        if [[ -n "$address" && ! $(grep -Fxq "$address" "/opt/zapret/ipset/zapret-hosts-user.txt") ]]; then
+            echo "$address" >> "/opt/zapret/ipset/zapret-hosts-user.txt"
+            echo "Добавлено: $address"
+        else
+            echo "Уже существует: $address"
+        fi
+    done
+    
+    manage_service restart
+
+    echo "Готово"
+    sleep 2
+    main_menu
+}
+
+delete_from_zapret() {
+    read -p "Введите IP-адреса или домены для удаления из листа (разделяйте пробелами, запятыми или |): " input
+
+    IFS=',| ' read -ra ADDRESSES <<< "$input"
+
+    for address in "${ADDRESSES[@]}"; do
+        address=$(echo "$address" | xargs)
+        if [[ -n "$address" && $(grep -Fxq "$address" "/opt/zapret/ipset/zapret-hosts-user.txt") ]]; then
+            sed -i "/^$address$/d" "/opt/zapret/ipset/zapret-hosts-user.txt"
+            echo "Удалено: $address"
+        else
+            echo "Не найдено: $address"
+        fi
+    done
+
+    manage_service restart
+
+    echo "Готово"
+    sleep 2
+    main_menu
+}
+
+
+configure_zapret_conf() {
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
-        echo "Клонирую стратегии..."
+        echo "Клонирую конфигурации..."
         if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
             echo "Ошибка: нестабильноe/слабое подключение к интернету."
             exit 1
         fi
-         echo "Клонирование успешно завершено." 
+            echo "Клонирование успешно завершено."
+            sleep 2
     fi
     if [[ -d /opt/zapret/zapret.cfgs ]]; then
-        echo "Проверяю наличие на обновление стратегий..."
+        echo "Проверяю наличие на обновление конфигураций..."
         cd /opt/zapret/zapret.cfgs && git pull
+        sleep 2
     fi
 
-    cp /opt/zapret/zapret.cfgs/lists/* /opt/zapret/ipset/
-    cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
     clear
 
-    echo "Выберите стратегию (можно поменять в любой момент, запустив скрипт еще раз):"
-    PS3="Введите номер стратегии: "
-    select CONF in /opt/zapret/zapret.cfgs/configurations/* "Отмена"; do
-        if [[ "$CONF" == "Отмена" ]]; then
+
+    echo "Выберите стратегию (можно поменять в любой момент, запустив Меню управления запретом еще раз):"
+    PS3="Введите номер стратегии (по умолчанию 6): "
+
+    select LIST in $(basename -a /opt/zapret/zapret.cfgs/configurations/*) "Отмена"; do
+        REPLY=${REPLY:-6}
+    
+        if [[ "$LIST" == "Отмена" ]]; then
             main_menu
-        elif [[ -n "$CONF" ]]; then
+        elif [[ -n "$LIST" ]]; then
             rm -f /opt/zapret/config
-            cp "$CONF" /opt/zapret/config
-            echo "Конфигурация '$CONF' установлена."
+            cp "/opt/zapret/zapret.cfgs/configurations/$LIST" /opt/zapret/config
+            echo "Стратегия '$LIST' установлена."
             sleep 2
             break
         else
             echo "Неверный выбор, попробуйте снова."
         fi
     done
+
    
     get_fwtype
 
@@ -448,7 +499,44 @@ configure_zapret() {
     main_menu
 }
 
+configure_zapret_list() {
+    if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
+        echo "Клонирую конфигурации..."
+        if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
+            echo "Ошибка: нестабильноe/слабое подключение к интернету."
+            exit 1
+        fi
+            echo "Клонирование успешно завершено."
+            sleep 2
+    fi
+    if [[ -d /opt/zapret/zapret.cfgs ]]; then
+        echo "Проверяю наличие на обновление конфигураций..."
+        cd /opt/zapret/zapret.cfgs && git pull
+        sleep 2
+    fi
 
+    clear
+
+    echo "Выберите хостлист (можно поменять в любой момент, запустив Меню управления запретом еще раз):"
+    PS3="Введите номер листа: "
+    select LIST in $(basename -a /opt/zapret/zapret.cfgs/lists/list*) "Отмена"; do
+        if [[ "$LIST" == "Отмена" ]]; then
+            main_menu
+        elif [[ -n "$LIST" ]]; then
+            rm -f /opt/zapret/ipset/zapret-hosts-user.txt
+            cp "$LIST" /opt/zapret/ipset/zapret-hosts-user.txt
+            echo "Хостлист '$LIST' установлен."
+            sleep 2
+            break
+        else
+            echo "Неверный выбор, попробуйте снова."
+        fi
+    done
+
+    manage_service restart
+    
+    main_menu
+}
 
 uninstall_zapret() {
     read -p "Вы действительно хотите удалить запрет? (y/N): " answer

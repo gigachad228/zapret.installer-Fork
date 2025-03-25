@@ -412,7 +412,11 @@ update_script() {
 }
 
 add_to_zapret() {
-    read -p "Введите IP-адреса или домены для добавления в лист (разделяйте пробелами, запятыми или |): " input
+    read -p "Введите IP-адреса или домены для добавления в лист (разделяйте пробелами, запятыми или |)(Enter для отмены): " input
+    
+    if [[ -z "$input" ]]; then
+        main_menu
+    fi
 
     IFS=',| ' read -ra ADDRESSES <<< "$input"
 
@@ -434,7 +438,11 @@ add_to_zapret() {
 }
 
 delete_from_zapret() {
-    read -p "Введите IP-адреса или домены для удаления из листа (разделяйте пробелами, запятыми или |): " input
+    read -p "Введите IP-адреса или домены для удаления из листа (разделяйте пробелами, запятыми или |)(Enter для отмены): " input
+
+    if [[ -z "$input" ]]; then
+        main_menu
+    fi
 
     IFS=',| ' read -ra ADDRESSES <<< "$input"
 
@@ -455,6 +463,23 @@ delete_from_zapret() {
     echo "Готово"
     sleep 2
     main_menu
+}
+
+search_in_zapret() {
+    read -p "Введите слово для поиска в хостлисте (Enter для отмены): " keyword
+
+    if [[ -z "$keyword" ]]; then
+        main_menu
+    fi
+
+    matches=$(grep "$keyword" "/opt/zapret/ipset/zapret-hosts-user.txt")
+
+    if [[ -n "$matches" ]]; then
+        echo "Найденные записи:"
+        echo "$matches"
+    else
+        echo "Совпадений не найдено."
+    fi
 }
 
 configure_zapret_conf() {

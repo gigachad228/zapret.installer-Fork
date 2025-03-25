@@ -398,6 +398,7 @@ update_zapret() {
     fi
     manage_service restart
     sleep 2
+    exec sudo "$0" "$@"
 }
 
 update_script() {
@@ -408,6 +409,7 @@ update_script() {
         cd /opt/zapret.installer/ && git pull
     fi
 
+    exec sudo "$0" "$@"
 }
 
 add_to_zapret() {

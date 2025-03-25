@@ -369,14 +369,16 @@ change_configuration(){
         echo "2) Сменить лист обхода"
         echo "3) Добавить ip-адреса или домены в лист обхода"
         echo "4) Удалить ip-адреса или домены из листа обхода"
-        echo "5) Выйти в меню"
+        echo "5) Поиск ip-адреса или домена в листе обхода"
+        echo "6) Выйти в меню"
         read -p "Выберите действие: " CHOICE
         case "$CHOICE" in
             1) configure_zapret_conf;;
             2) configure_zapret_list;;
             3) add_to_zapret;;
             4) delete_from_zapret;;
-            5) main_menu;;
+            5) search_in_zapret;;
+            6) main_menu;;
             *) echo "Неверный ввод!"; sleep 2;;
         esac
     done

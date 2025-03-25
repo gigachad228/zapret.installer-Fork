@@ -382,6 +382,7 @@ update_zapret() {
     fi
     if [[ -d /tmp/zapret.installer/ ]]; then
         cd /tmp/zapret.installer/ && git pull
+        chmod -R 777 /tmp/zapret.installer
     fi
     systemctl restart zapret
     sleep 2

@@ -2,7 +2,7 @@
 
 set -e  
 
-if command -v git &> /dev/null; then
+if command -v git > /dev/null 2>&1; then
     echo ""
 else
     echo "Команда git не найдена. Установите пакет git вручную"

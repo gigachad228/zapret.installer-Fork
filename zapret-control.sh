@@ -351,26 +351,28 @@ install_zapret() {
     echo "Клонирование успешно завершено."
     
 
-    if [[ ! -d /tmp/zapret.binaries ]]; then
+    if [[ ! -d /opt/zapret.installer/zapret.binaries ]]; then
         echo "Клонирую релиз запрета..."
-        mkdir -p /tmp/zapret.binaries
-        if ! wget -P /tmp/zapret.binaries/zapret https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
+        mkdir -p /opt/zapret.installer/zapret.binaries
+        if ! wget -P /opt/zapret.installer/zapret.binaries/zapret https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
             echo "Ошибка: не удалось получить релиз запрета."
             exit 1
         fi
         echo "Получение запрета завершено."
-        tar -xzf /tmp/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /tmp/zapret.binaries/zapret
-        cp -r /tmp/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
+        tar -xzf /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /opt/zapret.installer/zapret.binaries/zapret
+        cp -r /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
 
     fi
     if [[ ! -d /opt/zapret/binaries ]]; then
-        tar -xzf /tmp/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /tmp/zapret.binaries/zapret
-        cp -r /tmp/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
+        tar -xzf /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /opt/zapret.installer/zapret.binaries/zapret
+        cp -r /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
     fi
      
     
     cd /opt/zapret
     yes "" | ./install_easy.sh
+    cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit 
+    chmod +x /bin/zapret
     configure_zapret
 }
 
@@ -382,9 +384,11 @@ update_zapret() {
     if [[ -d /opt/zapret/zapret.cfgs ]]; then
         cd /opt/zapret/zapret.cfgs && git pull
     fi
-    if [[ -d /tmp/zapret.installer/ ]]; then
-        cd /tmp/zapret.installer/ && git pull
-        chmod -R 777 /tmp/zapret.installer
+    if [[ -d /opt/zapret.installer/ ]]; then
+        cd /opt/zapret.installer/ && git pull
+        rm -f /bin/zapret
+        cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit
+        chmod +x /bin/zapret
     fi
     systemctl restart zapret
     sleep 2
@@ -394,8 +398,8 @@ update_script() {
     if [[ -d /opt/zapret/zapret.cfgs ]]; then
         cd /opt/zapret/zapret.cfgs && git pull
     fi
-    if [[ -d /tmp/zapret.installer/ ]]; then
-        cd /tmp/zapret.installer/ && git pull
+    if [[ -d /opt/zapret.installer/ ]]; then
+        cd /opt/zapret.installer/ && git pull
     fi
 
 }
@@ -455,8 +459,8 @@ uninstall_zapret() {
                 yes "" | ./uninstall_easy.sh
             fi
             rm -rf /opt/zapret
-            rm -rf /tmp/zapret.binaries/
-            rm -rf /tmp/zapret.installer/
+            rm -rf /opt/zapret.installer/
+            rm -r /bin/zapret
             ;;
         * ) 
             main_menu

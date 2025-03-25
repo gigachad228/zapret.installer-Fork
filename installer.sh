@@ -1,24 +1,34 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e  
 
-REPO_DIR="/tmp/zapret.installer"
-
-
-if [ ! -d "$REPO_DIR" ]; then
-    cd /tmp || exit
-    git clone https://github.com/Snowy-Fluffy/zapret.installer.git
+if [ "$(id -u)" -eq 0 ]; then
+    SUDO=""
 else
-    cd "$REPO_DIR" || exit
-    if ! git pull; then
-        echo "Ошибка при обновлении. Удаляю репозиторий и клонирую заново..."
-        cd /tmp || exit
-        rm -rf "$REPO_DIR"
-        git clone https://github.com/Snowy-Fluffy/zapret.installer.git
-        cd "$REPO_DIR" || exit
+    if command -v sudo &> /dev/null; then
+        SUDO="sudo"
+    elif command -v doas &> /dev/null; then
+        SUDO="doas"
+    else
+        echo "Скрипт не может быть выполнен не от суперпользователя."
+        exit 1
     fi
 fi
 
-chmod +x /tmp/zapret.installer/zapret-control.sh
-bash /tmp/zapret.installer/zapret-control.sh
+if [ ! -d "/opt/zapret.installer" ]; then
+    cd /opt || exit
+    $SUDO git clone https://github.com/Snowy-Fluffy/zapret.installer.git
+else
+    cd "/opt/zapret.installer" || exit
+    if ! $SUDO git pull; then
+        echo "Ошибка при обновлении. Удаляю репозиторий и клонирую заново..."
+        cd /opt || exit
+        $SUDO rm -rf "/opt/zapret.installer"
+        $SUDO git clone https://github.com/Snowy-Fluffy/zapret.installer.git
+        cd "/opt/zapret.installer" || exit
+    fi
+fi
+
+$SUDO chmod +x /opt/zapret.installer/zapret-control.sh
+bash /opt/zapret.installer/zapret-control.sh
 

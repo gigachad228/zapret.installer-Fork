@@ -11,6 +11,8 @@
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Snowy-Fluffy/zapret.installer/refs/heads/main/installer.sh)"
 ```
+(Должен быть установлен curl в системе)
+
 
 После установки панель управления можно будет запустить из любого места, открыв терминал и прописав:  
 ```bash

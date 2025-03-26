@@ -16,13 +16,13 @@ install_dependencies() {
             opensuse) $SUDO zypper install -y git ;;
             *)
                 if [ -n "$ID_LIKE" ]; then
-                    case "$ID_LIKE" in
-                        debian) $SUDO DEBIAN_FRONTEND=noninteractive apt install -y git ;;
-                        *) echo "Неизвестная ОС: ${ID} ${ID_LIKE}"; exit 1 ;;
-                    esac
-                else
-                    echo "Неизвестная ОС: ${ID}"; exit 1
+                    for like in $ID_LIKE; do
+                        case "$like" in
+                            debian) $SUDO DEBIAN_FRONTEND=noninteractive apt install -y git; return ;;
+                        esac
+                    done
                 fi
+                echo "Неизвестная ОС: ${ID} ${ID_LIKE}"; exit 1
             ;;
         esac
     elif [ "$kernel" = "Darwin" ]; then
@@ -63,5 +63,5 @@ else
 fi
 
 $SUDO chmod +x /opt/zapret.installer/zapret-control.sh
-bash /opt/zapret.installer/zapret-control.sh
+exec bash /opt/zapret.installer/zapret-control.sh
 

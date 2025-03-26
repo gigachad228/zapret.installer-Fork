@@ -6,6 +6,11 @@ if [[ $EUID -ne 0 ]]; then
     exec sudo "$0" "$@"
 fi
 
+error_exit() {
+    tput rmcup
+    echo -e "\e[31mОшибка:\e[0m $1" >&2 
+    exit 1
+}
 
 detect_init() {
     if [ -d /run/systemd/system ]; then
@@ -18,8 +23,7 @@ detect_init() {
         INIT_SYSTEM="sysvinit"
     else
         INIT_SYSTEM="unknown"
-        echo "Ваш Init не поддерживается."
-        exit 0
+        error_exit "Ваш Init не поддерживается."
     fi
 }
 
@@ -234,11 +238,9 @@ install_dependencies() {
             eval "${command_by_ID[$ID_LIKE]}"
         fi
     elif [ "$kernel" = "Darwin" ]; then
-        echo "macOS не поддерживается на данный момент." 
-        exit 1
+        error_exit "macOS не поддерживается на данный момент." 
     else
-        echo "Неизвестная ОС: ${kernel}"
-        exit 1
+        error_exit "Неизвестная ОС: ${kernel}"
     fi
 }
 
@@ -275,7 +277,7 @@ main_menu() {
                 7) manage_autostart disable;;
                 8) manage_service stop;;
                 9) uninstall_zapret;;
-                10) exit 0;;
+                10) tput rmcup; exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         else
@@ -286,7 +288,7 @@ main_menu() {
             case "$CHOICE" in
                 1) install_zapret; main_menu;;
                 2) update_script;;
-                3) exit 0;;
+                3) tput rmcup; exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         fi
@@ -316,15 +318,13 @@ install_zapret() {
 
     echo "Клонирую репозиторий..."
     if ! git clone https://github.com/bol-van/zapret /opt/zapret ; then
-         echo "Ошибка: нестабильноe/слабое подключение к интернету."
-    exit 1
+         error_exit "нестабильноe/слабое подключение к интернету."
     fi
     echo "Клонирование успешно завершено."
 
     echo "Клонирую репозиторий..."
         if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
-    echo "Ошибка: нестабильноe/слабое подключение к интернету."
-    exit 1
+        error_exit "нестабильноe/слабое подключение к интернету."
     fi
     echo "Клонирование успешно завершено."
     
@@ -333,8 +333,7 @@ install_zapret() {
         echo "Клонирую релиз запрета..."
         mkdir -p /opt/zapret.installer/zapret.binaries
         if ! wget -P /opt/zapret.installer/zapret.binaries/zapret https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
-            echo "Ошибка: не удалось получить релиз запрета."
-            exit 1
+            error_exit "не удалось получить релиз запрета."
         fi
         echo "Получение запрета завершено."
         tar -xzf /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /opt/zapret.installer/zapret.binaries/zapret
@@ -347,13 +346,13 @@ install_zapret() {
     fi
     cd /opt/zapret
     yes "" | ./install_easy.sh
-    cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit 
+    cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || error_exit "не удалось скопировать скрипт в /bin" 
     chmod +x /bin/zapret
     rm -f /opt/zapret/config 
-    cp -r /opt/zapret/zapret.cfgs/configurations/general /opt/zapret/config || exit
+    cp -r /opt/zapret/zapret.cfgs/configurations/general /opt/zapret/config || error_exit "не удалось автоматически скопировать конфиг"
     rm -f /opt/zapret/ipset/zapret-hosts-user.txt
-    cp -r /opt/zapret/zapret.cfgs/lists/list-basic.txt /opt/zapret/ipset/zapret-hosts-user.txt || exit
-    cp -r /opt/zapret/zapret.cfgs/lists/ipset-discord.txt /opt/zapret/ipset/ipset-discord.txt || exit
+    cp -r /opt/zapret/zapret.cfgs/lists/list-basic.txt /opt/zapret/ipset/zapret-hosts-user.txt || error_exit "не удалось автоматически скопировать хостлист"
+    cp -r /opt/zapret/zapret.cfgs/lists/ipset-discord.txt /opt/zapret/ipset/ipset-discord.txt || error_exit "не удалось автоматически скопировать ипсет"
     manage_service restart
     configure_zapret_conf
     
@@ -392,7 +391,7 @@ update_zapret() {
     if [[ -d /opt/zapret.installer/ ]]; then
         cd /opt/zapret.installer/ && git pull
         rm -f /bin/zapret
-        cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit
+        cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || error_exit "не удалось скопировать скрипт в /bin при обновлении"
         chmod +x /bin/zapret
     fi
     manage_service restart
@@ -489,8 +488,7 @@ configure_zapret_conf() {
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
         echo "Клонирую конфигурации..."
         if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
-            echo "Ошибка: нестабильноe/слабое подключение к интернету."
-            exit 1
+            error_exit "нестабильноe/слабое подключение к интернету."
         fi
             echo "Клонирование успешно завершено."
             sleep 2
@@ -537,8 +535,7 @@ configure_zapret_list() {
     if [[ ! -d /opt/zapret/zapret.cfgs ]]; then
         echo "Клонирую конфигурации..."
         if ! git clone https://github.com/Snowy-Fluffy/zapret.cfgs /opt/zapret/zapret.cfgs ; then
-            echo "Ошибка: нестабильноe/слабое подключение к интернету."
-            exit 1
+            error_exit "нестабильноe/слабое подключение к интернету."
         fi
             echo "Клонирование успешно завершено."
             sleep 2
@@ -590,6 +587,6 @@ uninstall_zapret() {
     esac
 }
 
-
+tput smcup
 detect_init
 main_menu

@@ -7,24 +7,38 @@ install_dependencies() {
     if [ "$kernel" = "Linux" ]; then
         . /etc/os-release
 
-        case "$ID" in
-            arch) $SUDO pacman -S --noconfirm git ;;
-            debian|ubuntu|mint) $SUDO DEBIAN_FRONTEND=noninteractive apt install -y git ;;
-            fedora) $SUDO dnf install -y git ;;
-            void) $SUDO xbps-install -y git ;;
-            gentoo) $SUDO emerge --ask=n dev-vcs/git ;;
-            opensuse) $SUDO zypper install -y git ;;
-            *)
-                if [ -n "$ID_LIKE" ]; then
-                    for like in $ID_LIKE; do
-                        case "$like" in
-                            debian) $SUDO DEBIAN_FRONTEND=noninteractive apt install -y git; return ;;
-                        esac
-                    done
-                fi
-                echo "Неизвестная ОС: ${ID} ${ID_LIKE}"; exit 1
-            ;;
-        esac
+        update_cmd=""
+        install_cmd=""
+        if [ -n "$ID" ]; then
+            case "$ID" in
+                arch) update_cmd="$SUDO pacman -Sy --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git" ;;
+                debian|ubuntu|mint) update_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt update -y"; install_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt install -y git" ;;
+                fedora) update_cmd="$SUDO dnf check-update -y"; install_cmd="$SUDO dnf install -y git" ;;
+                void) update_cmd="$SUDO xbps-install -S"; install_cmd="$SUDO xbps-install -y git" ;;
+                gentoo) update_cmd="$SUDO emerge --sync --quiet"; install_cmd="$SUDO emerge --ask=n dev-vcs/git" ;;
+                opensuse) update_cmd="$SUDO zypper refresh -y"; install_cmd="$SUDO zypper install -y git" ;;
+            esac
+        fi
+
+        if [ -z "$install_cmd" ] && [ -n "$ID_LIKE" ]; then
+            for like in $ID_LIKE; do
+                case "$like" in
+                    debian) update_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt update -y"; install_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt install -y git"; break ;;
+                    arch) update_cmd="$SUDO pacman -Sy --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git"; break ;;
+                    fedora) update_cmd="$SUDO dnf check-update -y"; install_cmd="$SUDO dnf install -y git"; break ;;
+                    void) update_cmd="$SUDO xbps-install -S"; install_cmd="$SUDO xbps-install -y git"; break ;;
+                    gentoo) update_cmd="$SUDO emerge --sync --quiet"; install_cmd="$SUDO emerge --ask=n dev-vcs/git"; break ;;
+                    opensuse) update_cmd="$SUDO zypper refresh -y"; install_cmd="$SUDO zypper install -y git"; break ;;
+                esac
+            done
+        fi
+
+        if [ -n "$install_cmd" ]; then
+            eval "$update_cmd"
+            eval "$install_cmd"
+        else
+            echo "Неизвестная ОС: ${ID} ${ID_LIKE}"; exit 1
+        fi
     elif [ "$kernel" = "Darwin" ]; then
         echo "macOS не поддерживается на данный момент." 
         exit 1

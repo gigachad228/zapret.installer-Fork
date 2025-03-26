@@ -345,9 +345,6 @@ install_zapret() {
         tar -xzf /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4.tar.gz -C /opt/zapret.installer/zapret.binaries/zapret
         cp -r /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4/binaries/ /opt/zapret/binaries
     fi
-     
-    cp /opt/zapret/zapret.cfgs/binaries/* /opt/zapret/files/fake/
-
     cd /opt/zapret
     yes "" | ./install_easy.sh
     cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || exit 

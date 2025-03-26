@@ -2,12 +2,36 @@
 
 set -e  
 
-if command -v git > /dev/null 2>&1; then
-    echo ""
-else
-    echo "Команда git не найдена. Установите пакет git вручную"
-    exit 1
-fi
+install_dependencies() {
+    kernel="$(uname -s)"
+    if [ "$kernel" = "Linux" ]; then
+        . /etc/os-release
+
+        declare -A command_by_ID=(
+            ["arch"]="pacman -S --noconfirm git"
+            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y git"
+            ["fedora"]="dnf install -y git"
+            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y git"
+            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y git"
+            ["void"]="xpbs-install -y git "
+            ["gentoo"]="emerge --ask=n dev-vcs/git"
+            ["opensuse"]="zypper install -y git "
+        )
+
+        if [[ -v command_by_ID[$ID] ]]; then
+            eval "${command_by_ID[$ID]}"
+        elif [[ -v command_by_ID[$ID_LIKE] ]]; then
+            eval "${command_by_ID[$ID_LIKE]}"
+        fi
+    elif [ "$kernel" = "Darwin" ]; then
+        echo "macOS не поддерживается на данный момент." 
+        exit 1
+    else
+        echo "Неизвестная ОС: ${kernel}"
+        exit 1
+    fi
+}
+
 
 if [ "$(id -u)" -eq 0 ]; then
     SUDO=""
@@ -17,9 +41,15 @@ else
     elif command -v doas &> /dev/null; then
         SUDO="doas"
     else
-        echo "Скрипт не может быть выполнен не от суперпользователя."
+        echo "Скрипт не может быть выполнен не от имени суперпользователя."
         exit 1
     fi
+fi
+
+if command -v git > /dev/null 2>&1; then
+    echo "" 
+else
+    $SUDO install_dependencies
 fi
 
 if [ ! -d "/opt/zapret.installer" ]; then

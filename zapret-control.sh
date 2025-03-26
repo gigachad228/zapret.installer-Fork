@@ -219,12 +219,12 @@ install_dependencies() {
             ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev wget ipset iptables \
                             libcap-dev"
             ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc wget zlib1g-dev ipset iptables \
-                            libcap-dev git libnetfilter-queue-dev"
-            ["void"]="xpbs-install -y make gcc git zlib libcap wget ipset iptables \
+                            libcap-dev libnetfilter-queue-dev"
+            ["void"]="xpbs-install -y make gcc zlib libcap wget ipset iptables \
                             libnetfilter_queue"
-            ["gentoo"]="emerge --ask=n sys-libs/zlib dev-vcs/git net-firewall/iptables net-misc/wget net-firewall/ipset sys-libs/libcap  \
+            ["gentoo"]="emerge --ask=n sys-libs/zlib net-firewall/iptables net-misc/wget net-firewall/ipset sys-libs/libcap  \
                             net-libs/libnetfilter_queue"
-            ["opensuse"]="zypper install -y make git gcc wget zlib-devel ipset iptables \
+            ["opensuse"]="zypper install -y make gcc wget zlib-devel ipset iptables \
                             libcap-devel libnetfilter_queue-devel"
         )
 

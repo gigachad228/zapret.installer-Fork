@@ -468,7 +468,7 @@ update_zapret() {
     fi
     manage_service restart
     bash -c 'read -p "Нажмите Enter для продолжения..."'
-    exec sudo "$0" "$@"
+    exec "$0" "$@"
 }
 
 update_script() {
@@ -479,7 +479,7 @@ update_script() {
         cd /opt/zapret.installer/ && git pull
     fi
     bash -c 'read -p "Нажмите Enter для продолжения..."'
-    exec sudo "$0" "$@"
+    exec "$0" "$@"
 }
 
 add_to_zapret() {

@@ -30,7 +30,7 @@ install_dependencies() {
                     void) update_cmd="$SUDO xbps-install -S"; install_cmd="$SUDO xbps-install -y git"; break ;;
                     gentoo) update_cmd="$SUDO emerge --sync --quiet"; install_cmd="$SUDO emerge --ask=n dev-vcs/git"; break ;;
                     opensuse) update_cmd="$SUDO zypper refresh -y"; install_cmd="$SUDO zypper install -y git"; break ;;
-                    openwrt) update_cmd="$SUDO opkg update"; install_cmd="$SUDO opkg install -y git bash" ; break ;;
+                    openwrt) update_cmd="$SUDO opkg update"; install_cmd="$SUDO opkg install git bash" ; break ;;
                 esac
             done
         fi

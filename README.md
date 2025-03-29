@@ -25,8 +25,8 @@ zapret
 - Arch-подобные  
 - Void  
 - Gentoo
-
-Частичная поддержка ruinit, OpenRC и SysVinit  
+- Openwrt
+Частичная поддержка ruinit, procd, OpenRC и SysVinit  
 (Systemd полностью поддерживается и корректно работает).  
 
 О всех багах и недочётах сообщайте в issues или в моём [Telegram-канале](https://t.me/linux_hi).  

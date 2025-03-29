@@ -7,7 +7,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 error_exit() {
-    tput rmcup
+    $TPUT_E 
     echo -e "\e[31mОшибка:\e[0m $1" >&2 
     exit 1
 }
@@ -150,8 +150,12 @@ whichq()
 check_openwrt() {
     if grep -q '^ID="openwrt"$' /etc/os-release; then
         SYSTEM=openwrt
+        TPUT_B=""
+        TPUT_E=""
         
-
+    else
+        TPUT_B="tput smcup"
+        TPUT_E="tput rmcup"
     fi
 }
 
@@ -344,7 +348,7 @@ main_menu() {
                 7) manage_autostart disable;;
                 8) manage_service stop;;
                 9) uninstall_zapret;;
-                10) tput rmcup; exit 0;;
+                10) $TPUT_E; exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         else
@@ -655,7 +659,7 @@ uninstall_zapret() {
     esac
 }
 
-tput smcup
 check_openwrt
+$TPUT_B
 detect_init
 main_menu

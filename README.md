@@ -26,6 +26,7 @@ zapret
 - Void  
 - Gentoo
 - Openwrt
+
 Частичная поддержка ruinit, procd, OpenRC и SysVinit  
 (Systemd полностью поддерживается и корректно работает).  
 

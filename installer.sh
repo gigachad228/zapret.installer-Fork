@@ -11,12 +11,13 @@ install_dependencies() {
         install_cmd=""
         if [ -n "$ID" ]; then
             case "$ID" in
-                arch) update_cmd="$SUDO pacman -Sy --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git" ;;
+                arch) update_cmd="$SUDO pacman -Syu --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git" ;;
                 debian|ubuntu|mint) update_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt update -y"; install_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt install -y git" ;;
                 fedora) update_cmd="$SUDO dnf check-update -y"; install_cmd="$SUDO dnf install -y git" ;;
                 void) update_cmd="$SUDO xbps-install -S"; install_cmd="$SUDO xbps-install -y git" ;;
                 gentoo) update_cmd="$SUDO emerge --sync --quiet"; install_cmd="$SUDO emerge --ask=n dev-vcs/git" ;;
                 opensuse) update_cmd="$SUDO zypper refresh -y"; install_cmd="$SUDO zypper install -y git" ;;
+                openwrt) update_cmd="$SUDO opkg update"; install_cmd="$SUDO opkg install -y git bash" ;;
             esac
         fi
 
@@ -24,11 +25,12 @@ install_dependencies() {
             for like in $ID_LIKE; do
                 case "$like" in
                     debian) update_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt update -y"; install_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt install -y git"; break ;;
-                    arch) update_cmd="$SUDO pacman -Sy --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git"; break ;;
+                    arch) update_cmd="$SUDO pacman -Syu --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git"; break ;;
                     fedora) update_cmd="$SUDO dnf check-update -y"; install_cmd="$SUDO dnf install -y git"; break ;;
                     void) update_cmd="$SUDO xbps-install -S"; install_cmd="$SUDO xbps-install -y git"; break ;;
                     gentoo) update_cmd="$SUDO emerge --sync --quiet"; install_cmd="$SUDO emerge --ask=n dev-vcs/git"; break ;;
                     opensuse) update_cmd="$SUDO zypper refresh -y"; install_cmd="$SUDO zypper install -y git"; break ;;
+                    openwrt) update_cmd="$SUDO opkg update"; install_cmd="$SUDO opkg install -y git bash" ; break ;;
                 esac
             done
         fi

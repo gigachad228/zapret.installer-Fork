@@ -13,22 +13,29 @@ error_exit() {
 }
 
 detect_init() {
+    GET_LIST_PREFIX=/ipset/get_
+
+    SYSTEMD_DIR=/lib/systemd
+    [ -d "$SYSTEMD_DIR" ] || SYSTEMD_DIR=/usr/lib/systemd
+    [ -d "$SYSTEMD_DIR" ] && SYSTEMD_SYSTEM_DIR="$SYSTEMD_DIR/system"
+
+    INIT_SCRIPT=/etc/init.d/zapret
     if [ -d /run/systemd/system ]; then
         INIT_SYSTEM="systemd"
+    elif [ $SYSTEM == openwrt ]; then
+        INIT_SYSTEM="procd"
     elif command -v openrc-init >/dev/null 2>&1; then
         INIT_SYSTEM="openrc"
     elif command -v runit >/dev/null 2>&1; then
         INIT_SYSTEM="runit"
-    elif [ -x /sbin/init ] && /sbin/init --version 2>&1 | grep -q "sysvinit"; then
-        INIT_SYSTEM="sysvinit"
+    elif [ -x /sbin/init ] && /sbin/init --version 2>&1 | grep -qi "sysv init"; then
+        INIT_SYSTEM="sysvinit" 
     else
-        INIT_SYSTEM="unknown"
         error_exit "Ваш Init не поддерживается."
     fi
 }
 
 check_zapret_exist() {
-
     case "$INIT_SYSTEM" in
         systemd)
             if [ -f /etc/systemd/system/timers.target.wants/zapret-list-update.timer ]; then
@@ -39,6 +46,13 @@ check_zapret_exist() {
             ;;
         openrc)
             rc-service -l | grep -q "zapret" && service_exists=true || service_exists=false
+            ;;
+        procd)
+            if [ -f /etc/init.d/zapret ]; then
+                service_exists=true
+            else
+                service_exists=false
+            fi
             ;;
         runit)
             [ -d /etc/service/zapret ] && service_exists=true || service_exists=false
@@ -95,6 +109,20 @@ check_zapret_status() {
             rc-service zapret status >/dev/null 2>&1 && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
             rc-update show | grep -q zapret && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
             ;;
+        procd)
+            
+            if /etc/init.d/zapret status | grep -q "running"; then
+                ZAPRET_ACTIVE=true
+            else
+                ZAPRET_ACTIVE=false
+            fi
+            if ls /etc/rc.d/ | grep -q zapret >/dev/null 2>&1; then
+                ZAPRET_ENABLED=true
+            else
+                ZAPRET_ENABLED=false
+            fi
+
+            ;;
         runit)
             sv status zapret >/dev/null 2>&1 && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
             [ -L /var/service/zapret ] && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
@@ -106,9 +134,29 @@ check_zapret_status() {
 }
 
 
-exists() {
-    command -v "$1" >/dev/null 2>&1
+exists()
+{
+	which "$1" >/dev/null 2>/dev/null
 }
+existf()
+{
+	type "$1" >/dev/null 2>/dev/null
+}
+whichq()
+{
+	which $1 2>/dev/null
+}
+
+check_openwrt() {
+    if grep -q '^ID="openwrt"$' /etc/os-release; then
+        SYSTEM=openwrt
+        
+
+    fi
+}
+
+
+
 
 get_fwtype() {
     [ -n "$FWTYPE" ] && return
@@ -117,6 +165,18 @@ get_fwtype() {
 
     case "$UNAME" in
         Linux)
+            if [[ $SYSTEM == openwrt ]]; then
+                local version_id
+                version_id=$(grep '^VERSION_ID=' "$os_release" | cut -d '"' -f2)
+
+                if [ "$(echo "$version_id >= 22.03" | bc)" -eq 1 ]; then
+                    FWTYPE=nftables
+                    return 0
+                else
+                    FWTYPE=iptables
+                    return 0
+                fi
+            fi
 
             if exists iptables; then
                 iptables_version=$(iptables -V 2>&1)
@@ -176,6 +236,8 @@ manage_service() {
         sysvinit)
             service zapret "$1"
             ;;
+        openrc)
+            service zapret "$1"
     esac
 }
 
@@ -205,6 +267,8 @@ manage_autostart() {
                 update-rc.d -f zapret remove
             fi
             ;;
+        openrc)
+            service zapret "$1"
     esac
 }
 
@@ -216,20 +280,23 @@ install_dependencies() {
         declare -A command_by_ID=(
             ["arch"]="pacman -S --noconfirm make gcc wget libcap ipset \
                             libnetfilter_queue"
-            ["debian"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev ipset iptables \
+            ["debian"]="apt-get install -y make gcc zlib1g-dev ipset iptables \
                             libcap-dev wget"
             ["fedora"]="dnf install -y make gcc zlib-devel ipset iptables \
                             libcap-devel wget"
-            ["ubuntu"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc zlib1g-dev wget ipset iptables \
+            ["ubuntu"]="apt-get install -y make gcc zlib1g-dev wget ipset iptables \
                             libcap-dev"
-            ["mint"]="DEBIAN_FRONTEND=noninteractive apt install -y make gcc wget zlib1g-dev ipset iptables \
+            ["mint"]="apt-get install -y make gcc wget zlib1g-dev ipset iptables \
                             libcap-dev libnetfilter-queue-dev"
             ["void"]="xpbs-install -y make gcc zlib libcap wget ipset iptables \
                             libnetfilter_queue"
-            ["gentoo"]="emerge --ask=n sys-libs/zlib net-firewall/iptables net-misc/wget net-firewall/ipset sys-libs/libcap  \
+            ["gentoo"]="emerge sys-libs/zlib net-firewall/iptables net-misc/wget net-firewall/ipset sys-libs/libcap  \
                             net-libs/libnetfilter_queue"
             ["opensuse"]="zypper install -y make gcc wget zlib-devel ipset iptables \
                             libcap-devel libnetfilter_queue-devel"
+            ["openwrt"]="opkg install iptables ipset \
+                            libcap wget"
+
         )
 
         if [[ -v command_by_ID[$ID] ]]; then
@@ -299,7 +366,7 @@ main_menu() {
 install_zapret() {
     install_dependencies
     if [[ $dir_exists == true ]]; then
-        read -p "На вашем компьютере был найден запрет (/opt/zapret). Для продолжения его необходимо удалить. Вы дествительно хотите удалить запрет (/opt/zapret) и продолжить? (y/N): " answer
+        read -p "На вашем компьютере был найден запрет (/opt/zapret). Для продолжения его необходимо удалить. Вы действительно хотите удалить запрет (/opt/zapret) и продолжить? (y/N): " answer
         case "$answer" in
             [Yy]* ) 
                 if [[ -f /opt/zapret/uninstall_easy.sh ]]; then
@@ -333,6 +400,7 @@ install_zapret() {
         echo "Клонирую релиз запрета..."
         mkdir -p /opt/zapret.installer/zapret.binaries
         if ! wget -P /opt/zapret.installer/zapret.binaries/zapret https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
+            rm -rf /opt/zapret.installer/
             error_exit "не удалось получить релиз запрета."
         fi
         echo "Получение запрета завершено."
@@ -588,5 +656,6 @@ uninstall_zapret() {
 }
 
 tput smcup
+check_openwrt
 detect_init
 main_menu

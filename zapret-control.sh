@@ -171,7 +171,7 @@ get_fwtype() {
         Linux)
             if [[ $SYSTEM == openwrt ]]; then
                 if exists iptables; then
-                    iptables_version=$(iptables -V 2>&1)
+                    iptables_version=$(iptables --version 2>&1)
 
                     if [[ "$iptables_version" == *"legacy"* ]]; then
                         FWTYPE="iptables"

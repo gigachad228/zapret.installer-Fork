@@ -175,13 +175,16 @@ get_fwtype() {
 
                     if [[ "$iptables_version" == *"legacy"* ]]; then
                         FWTYPE="iptables"
+                        return 0
                     elif [[ "$iptables_version" == *"nf_tables"* ]]; then
                         FWTYPE="nftables"
+                        return 0
                     else
                         echo "Не удалось определить файрвол. По умолчанию установлен nftables, вы его можете изменить в файле /opt/zapret/config."
                         echo "Продолжаю через 5 секунд..."
                         FWTYPE="nftables"
                         sleep 5
+                        return 0 
                     fi
                 else
                     echo "Не удалось определить файрвол. По умолчанию установлен nftables, вы его можете изменить в файле /opt/zapret/config."
@@ -189,6 +192,7 @@ get_fwtype() {
                     
                     FWTYPE="nftables"
                     sleep 5
+                    return 0
                 fi
             fi
 

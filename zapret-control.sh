@@ -31,7 +31,7 @@ detect_init() {
     elif [ -x /sbin/init ] && /sbin/init --version 2>&1 | grep -qi "sysv init"; then
         INIT_SYSTEM="sysvinit" 
     else
-        error_exit "Ваш Init не поддерживается."
+        error_exit "Не удалось определить init."
     fi
 }
 
@@ -43,9 +43,6 @@ check_zapret_exist() {
             else
                 service_exists=false
             fi
-            ;;
-        openrc)
-            rc-service -l | grep -q "zapret" && service_exists=true || service_exists=false
             ;;
         procd)
             if [ -f /etc/init.d/zapret ]; then
@@ -109,6 +106,9 @@ check_zapret_status() {
             rc-service zapret status >/dev/null 2>&1 && ZAPRET_ACTIVE=true || ZAPRET_ACTIVE=false
             rc-update show | grep -q zapret && ZAPRET_ENABLED=true || ZAPRET_ENABLED=false
             ;;
+        openrc)
+            rc-service -l | grep -q "zapret" && service_exists=true || service_exists=false
+            ;;
         procd)
             
             if /etc/init.d/zapret status | grep -q "running"; then
@@ -170,15 +170,25 @@ get_fwtype() {
     case "$UNAME" in
         Linux)
             if [[ $SYSTEM == openwrt ]]; then
-                local version_id
-                version_id=$(grep '^VERSION_ID=' "$os_release" | cut -d '"' -f2)
+                if exists iptables; then
+                    iptables_version=$(iptables -V 2>&1)
 
-                if [ "$(echo "$version_id >= 22.03" | bc)" -eq 1 ]; then
-                    FWTYPE=nftables
-                    return 0
+                    if [[ "$iptables_version" == *"legacy"* ]]; then
+                        FWTYPE="iptables"
+                    elif [[ "$iptables_version" == *"nf_tables"* ]]; then
+                        FWTYPE="nftables"
+                    else
+                        echo "Не удалось определить файрвол. По умолчанию установлен nftables, вы его можете изменить в файле /opt/zapret/config."
+                        echo "Продолжаю через 5 секунд..."
+                        FWTYPE="nftables"
+                        sleep 5
+                    fi
                 else
-                    FWTYPE=iptables
-                    return 0
+                    echo "Не удалось определить файрвол. По умолчанию установлен nftables, вы его можете изменить в файле /opt/zapret/config."
+                    echo "Продолжаю через 5 секунд..."
+                    
+                    FWTYPE="nftables"
+                    sleep 5
                 fi
             fi
 
@@ -240,7 +250,7 @@ manage_service() {
         sysvinit)
             service zapret "$1"
             ;;
-        openrc)
+        procd)
             service zapret "$1"
     esac
 }
@@ -249,13 +259,6 @@ manage_autostart() {
     case "$INIT_SYSTEM" in
         systemd)
             systemctl "$1" zapret
-            ;;
-        openrc)
-            if [[ "$1" == "enable" ]]; then
-                rc-update add zapret default
-            else
-                rc-update del zapret default
-            fi
             ;;
         runit)
             if [[ "$1" == "enable" ]]; then
@@ -272,6 +275,9 @@ manage_autostart() {
             fi
             ;;
         openrc)
+            service zapret "$1"
+            ;;
+        procd)
             service zapret "$1"
     esac
 }
@@ -331,7 +337,7 @@ main_menu() {
             echo "10) Выйти"
             read -p "Выберите действие: " CHOICE
             case "$CHOICE" in
-                1) update_zapret;;
+                1) update_zapret_menu;;
                 2) change_configuration;;
                 3) manage_service restart;;
                 4) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."';;
@@ -445,6 +451,23 @@ change_configuration(){
     done
 }
 
+update_zapret_menu(){
+    while true; do
+        clear
+        echo "===== Меню управления Запретом ====="
+        echo "1) Обновить zapret (не рекомендуется)"
+        echo "2) Обновить скрипт"
+        echo "3) Выйти в меню"
+        read -p "Выберите действие: " CHOICE
+        case "$CHOICE" in
+            1) update_zapret;;
+            2) update_script;;
+            3) main_menu;;
+            *) echo "Неверный ввод!"; sleep 2;;
+        esac
+    done
+}
+
 update_zapret() {
     if [[ -d /opt/zapret ]]; then
         cd /opt/zapret && git pull
@@ -470,6 +493,13 @@ update_script() {
     if [[ -d /opt/zapret.installer/ ]]; then
         cd /opt/zapret.installer/ && git pull
     fi
+    if [[ ZAPRET_EXIST == true ]]; then
+        rm -f /bin/zapret
+        cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || error_exit "не удалось скопировать скрипт в /bin при обновлении"
+        chmod +x /bin/zapret
+        manage_service restart
+    fi
+
     bash -c 'read -p "Нажмите Enter для продолжения..."'
     exec "$0" "$@"
 }

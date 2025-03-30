@@ -291,6 +291,7 @@ install_dependencies() {
             ["gentoo"]="emerge net-firewall/iptables net-firewall/ipset"
             ["opensuse"]="zypper install -y iptables ipset"
             ["openwrt"]="opkg install iptables ipset"
+            ["altlinux"]="apt-get install -y iptables ipset"
         )
 
         if [[ -v command_by_ID[$ID] ]]; then
@@ -301,7 +302,8 @@ install_dependencies() {
     elif [ "$kernel" = "Darwin" ]; then
         error_exit "macOS не поддерживается на данный момент." 
     else
-        error_exit "Неизвестная ОС: ${kernel}"
+        echo "Неизвестная ОС: ${kernel}. Установите iptables и ipset самостоятельно." bash -c 'read -p "Нажмите Enter для продолжения..."'
+ 
     fi
 }
 

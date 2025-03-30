@@ -16,9 +16,10 @@ install_dependencies() {
                 debian|ubuntu|mint) echo "$SUDO apt update -y && $SUDO apt install -y git" ;;
                 fedora)    echo "$SUDO dnf check-update -y && $SUDO dnf install -y git" ;;
                 void)      echo "$SUDO xbps-install -S && $SUDO xbps-install -y git" ;;
-                gentoo)    echo "$SUDO emerge --sync --quiet && $SUDO emerge --ask=n dev-vcs/git" ;;
+                gentoo)    echo "$SUDO emerge --sync --quiet && $SUDO emerge --ask=n dev-vcs/git app-shells/bash" ;;
                 opensuse)  echo "$SUDO zypper refresh -y && $SUDO zypper install -y git" ;;
                 openwrt)   echo "$SUDO opkg update && $SUDO opkg install git git-http bash" ;;
+                altlinux)  echo "$SUDO apt-get update -y && $SUDO apt-get install -y git bash" ;;
                 *)         echo "" ;;
             esac
         }
@@ -34,14 +35,16 @@ install_dependencies() {
             eval "$install_cmd"
         else
             echo "Неизвестная ОС: ${ID:-Неизвестно}"
-            exit 1
+            echo "Установите git и bash самостоятельно."
+            sleep 2
         fi
     elif [ "$kernel" = "Darwin" ]; then
         echo "macOS не поддерживается на данный момент."
         exit 1
     else
         echo "Неизвестная ОС: $kernel"
-        exit 1
+        echo "Установите git и bash самостоятельно."
+        sleep 2
     fi
 }
 

@@ -359,7 +359,7 @@ main_menu() {
             case "$CHOICE" in
                 1) install_zapret; main_menu;;
                 2) update_script;;
-                3) tput rmcup; exit 0;;
+                3) $TPUT_E; exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         fi

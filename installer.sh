@@ -4,48 +4,43 @@ set -e
 
 install_dependencies() {
     kernel="$(uname -s)"
+
     if [ "$kernel" = "Linux" ]; then
-        . /etc/os-release
+        [ -f /etc/os-release ] && . /etc/os-release || { echo "Не удалось определить ОС"; exit 1; }
 
-        update_cmd=""
-        install_cmd=""
-        if [ -n "$ID" ]; then
-            case "$ID" in
-                arch) update_cmd="$SUDO pacman -Syu --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git" ;;
-                debian|ubuntu|mint) update_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt update -y"; install_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt install -y git" ;;
-                fedora) update_cmd="$SUDO dnf check-update -y"; install_cmd="$SUDO dnf install -y git" ;;
-                void) update_cmd="$SUDO xbps-install -S"; install_cmd="$SUDO xbps-install -y git" ;;
-                gentoo) update_cmd="$SUDO emerge --sync --quiet"; install_cmd="$SUDO emerge --ask=n dev-vcs/git" ;;
-                opensuse) update_cmd="$SUDO zypper refresh -y"; install_cmd="$SUDO zypper install -y git" ;;
-                openwrt) update_cmd="$SUDO opkg update"; install_cmd="$SUDO opkg install -y git bash git-http ncurses-term" ;;
+        SUDO="${SUDO:-}"
+
+        find_package_manager() {
+            case "$1" in
+                arch)      echo "$SUDO pacman -Syu --noconfirm && $SUDO pacman -S --noconfirm git" ;;
+                debian|ubuntu|mint) echo "$SUDO apt update -y && $SUDO apt install -y git" ;;
+                fedora)    echo "$SUDO dnf check-update -y && $SUDO dnf install -y git" ;;
+                void)      echo "$SUDO xbps-install -S && $SUDO xbps-install -y git" ;;
+                gentoo)    echo "$SUDO emerge --sync --quiet && $SUDO emerge --ask=n dev-vcs/git" ;;
+                opensuse)  echo "$SUDO zypper refresh -y && $SUDO zypper install -y git" ;;
+                openwrt)   echo "$SUDO opkg update && $SUDO opkg install git git-http bash" ;;
+                *)         echo "" ;;
             esac
-        fi
+        }
 
+        install_cmd="$(find_package_manager "$ID")"
         if [ -z "$install_cmd" ] && [ -n "$ID_LIKE" ]; then
             for like in $ID_LIKE; do
-                case "$like" in
-                    debian) update_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt update -y"; install_cmd="$SUDO DEBIAN_FRONTEND=noninteractive apt install -y git"; break ;;
-                    arch) update_cmd="$SUDO pacman -Syu --noconfirm"; install_cmd="$SUDO pacman -S --noconfirm git"; break ;;
-                    fedora) update_cmd="$SUDO dnf check-update -y"; install_cmd="$SUDO dnf install -y git"; break ;;
-                    void) update_cmd="$SUDO xbps-install -S"; install_cmd="$SUDO xbps-install -y git"; break ;;
-                    gentoo) update_cmd="$SUDO emerge --sync --quiet"; install_cmd="$SUDO emerge --ask=n dev-vcs/git"; break ;;
-                    opensuse) update_cmd="$SUDO zypper refresh -y"; install_cmd="$SUDO zypper install -y git"; break ;;
-                    openwrt) update_cmd="$SUDO opkg update"; install_cmd="$SUDO opkg install git git-http bash" ; break ;;
-                esac
+                install_cmd="$(find_package_manager "$like")" && [ -n "$install_cmd" ] && break
             done
         fi
 
         if [ -n "$install_cmd" ]; then
-            eval "$update_cmd"
             eval "$install_cmd"
         else
-            echo "Неизвестная ОС: ${ID} ${ID_LIKE}"; exit 1
+            echo "Неизвестная ОС: ${ID:-Неизвестно}"
+            exit 1
         fi
     elif [ "$kernel" = "Darwin" ]; then
-        echo "macOS не поддерживается на данный момент." 
+        echo "macOS не поддерживается на данный момент."
         exit 1
     else
-        echo "Неизвестная ОС: ${kernel}"
+        echo "Неизвестная ОС: $kernel"
         exit 1
     fi
 }

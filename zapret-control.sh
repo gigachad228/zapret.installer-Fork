@@ -282,25 +282,15 @@ install_dependencies() {
         . /etc/os-release
 
         declare -A command_by_ID=(
-            ["arch"]="pacman -S --noconfirm make gcc wget libcap ipset \
-                            libnetfilter_queue"
-            ["debian"]="apt-get install -y make gcc zlib1g-dev ipset iptables \
-                            libcap-dev wget"
-            ["fedora"]="dnf install -y make gcc zlib-devel ipset iptables \
-                            libcap-devel wget"
-            ["ubuntu"]="apt-get install -y make gcc zlib1g-dev wget ipset iptables \
-                            libcap-dev"
-            ["mint"]="apt-get install -y make gcc wget zlib1g-dev ipset iptables \
-                            libcap-dev libnetfilter-queue-dev"
-            ["void"]="xpbs-install -y make gcc zlib libcap wget ipset iptables \
-                            libnetfilter_queue"
-            ["gentoo"]="emerge sys-libs/zlib net-firewall/iptables net-misc/wget net-firewall/ipset sys-libs/libcap  \
-                            net-libs/libnetfilter_queue"
-            ["opensuse"]="zypper install -y make gcc wget zlib-devel ipset iptables \
-                            libcap-devel libnetfilter_queue-devel"
-            ["openwrt"]="opkg install iptables ipset \
-                            libcap wget"
-
+            ["arch"]="pacman -S --noconfirm iptables ipset"
+            ["debian"]="apt-get install -y iptables ipset"
+            ["fedora"]="dnf install -y iptables ipset"
+            ["ubuntu"]="apt-get install -y iptables ipset"
+            ["mint"]="apt-get install -y iptables ipset"
+            ["void"]="xbps-install -y iptables ipset"
+            ["gentoo"]="emerge net-firewall/iptables net-firewall/ipset"
+            ["opensuse"]="zypper install -y iptables ipset"
+            ["openwrt"]="opkg install iptables ipset"
         )
 
         if [[ -v command_by_ID[$ID] ]]; then
@@ -359,7 +349,7 @@ main_menu() {
             case "$CHOICE" in
                 1) install_zapret; main_menu;;
                 2) update_script;;
-                3) $TPUT_E; exit 0;;
+                3) tput rmcup; exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         fi
@@ -402,8 +392,8 @@ install_zapret() {
 
     if [[ ! -d /opt/zapret.installer/zapret.binaries ]]; then
         echo "Клонирую релиз запрета..."
-        mkdir -p /opt/zapret.installer/zapret.binaries
-        if ! wget -P /opt/zapret.installer/zapret.binaries/zapret https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
+        mkdir -p /opt/zapret.installer/zapret.binaries/zapret
+        if ! curl -L -o /opt/zapret.installer/zapret.binaries/zapret/zapret-v70.4.tar.gz https://github.com/bol-van/zapret/releases/download/v70.4/zapret-v70.4.tar.gz; then
             rm -rf /opt/zapret.installer/
             error_exit "не удалось получить релиз запрета."
         fi

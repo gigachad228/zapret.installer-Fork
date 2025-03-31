@@ -23,12 +23,13 @@ zapret
 - Debian-подобные  
 - Fedora-подобные  
 - Arch-подобные  
+- Alt Linux
 - Void  
 - Gentoo
 - Openwrt
 
-Частичная поддержка ruinit, procd, OpenRC и SysVinit  
-(Systemd полностью поддерживается и корректно работает).  
+Частичная поддержка ruinit, OpenRC и SysVinit  
+(Systemd и procd полностью поддерживается и корректно работает).  
 
 О всех багах и недочётах сообщайте в issues или в моём [Telegram-канале](https://t.me/linux_hi).  
 Поддержка других init-систем и дистрибутивов будет добавлена в дальнейшем.  

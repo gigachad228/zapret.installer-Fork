@@ -290,9 +290,9 @@ install_dependencies() {
     kernel="$(uname -s)"
     if [ "$kernel" = "Linux" ]; then
         . /etc/os-release
-
+        
         declare -A command_by_ID=(
-            ["arch"]="pacman -S --noconfirm iptables ipset"
+            ["arch"]="pacman -S --noconfirm ipset"
             ["debian"]="apt-get install -y iptables ipset"
             ["fedora"]="dnf install -y iptables ipset"
             ["ubuntu"]="apt-get install -y iptables ipset"
@@ -306,8 +306,13 @@ install_dependencies() {
 
         if [[ -v command_by_ID[$ID] ]]; then
             eval "${command_by_ID[$ID]}"
-        elif [[ -v command_by_ID[$ID_LIKE] ]]; then
-            eval "${command_by_ID[$ID_LIKE]}"
+        else
+            for like in $ID_LIKE; do
+                if [[ -n "${command_by_ID[$like]}" ]]; then
+                    eval "${command_by_ID[$like]}"
+                    break
+                fi
+            done
         fi
     elif [ "$kernel" = "Darwin" ]; then
         error_exit "macOS не поддерживается на данный момент." 

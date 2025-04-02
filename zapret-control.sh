@@ -150,12 +150,15 @@ whichq()
 check_openwrt() {
     if grep -q '^ID="openwrt"$' /etc/os-release; then
         SYSTEM=openwrt
-        TPUT_B=""
-        TPUT_E=""
-        
-    else
+    fi
+}
+check_tput() {
+    if command -v tput &>/dev/null; then
         TPUT_B="tput smcup"
         TPUT_E="tput rmcup"
+    else
+        TPUT_B=""
+        TPUT_E=""
     fi
 }
 
@@ -323,6 +326,32 @@ install_dependencies() {
 }
 
 
+toggle_service() {
+    while true; do
+        clear
+        echo "===== Управление сервисом Запрета ====="
+        if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
+        if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi
+        if [[ $ZAPRET_ENABLED == true ]]; then echo "!Запрет в автозагрузке!"; fi
+        if [[ $ZAPRET_ENABLED == false ]]; then echo "!Запрет не в автозагрузке!"; fi
+        echo ""
+        echo "1) $( [[ $ZAPRET_ENABLED == true ]] && echo "Убрать из автозагрузки" || echo "Добавить в автозагрузку" )"
+        echo "2) $( [[ $ZAPRET_ACTIVE == true ]] && echo "Выключить Запрет" || echo "Включить Запрет" )"
+        echo "3) Посмотреть статус запрета"
+        echo "4) Перезапустить запрет"
+        echo "5) Выйти в меню"
+        read -p "Выберите действие: " CHOICE
+        case "$CHOICE" in
+            1) [[ $ZAPRET_ENABLED == true ]] && manage_autostart disable || manage_autostart enable;main_menu;;
+            2) [[ $ZAPRET_ACTIVE == true ]] && manage_service stop || manage_service start;main_menu;;
+            3) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."'; main_menu;;
+            4) manage_service restart;main_menu;;
+            5) main_menu;;
+            *) echo "Неверный ввод!"; sleep 2;;
+        esac
+    done
+}
+
 
 main_menu() {
     while true; do
@@ -333,29 +362,20 @@ main_menu() {
         if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi 
         if [[ $ZAPRET_EXIST == false ]]; then clear; echo "===== Меню управления Запретом ====="; echo "!Запрет не установлен!"; fi
+        echo ""
         if [[ $ZAPRET_EXIST == true ]]; then
             echo "1) Проверить на обновления и обновить"
             echo "2) Сменить конфигурацию запрета"
-            echo "3) Перезапустить Запрет"
-            echo "4) Посмотреть статус Запрета"
-            if [[ $ZAPRET_ENABLED == false ]]; then echo "5) Добавить в автозагрузку"; fi
-            if [[ $ZAPRET_ACTIVE == false ]]; then echo "6) Включить Запрет"; fi
-            if [[ $ZAPRET_ENABLED == true ]]; then echo "7) Убрать из автозагрузки"; fi
-            if [[ $ZAPRET_ACTIVE == true ]]; then echo "8) Выключить Запрет"; fi
-            echo "9) Удалить Запрет"
-            echo "10) Выйти"
+            echo "3) Управление сервисом запрета"
+            echo "4) Удалить Запрет"
+            echo "5) Выйти"
             read -p "Выберите действие: " CHOICE
             case "$CHOICE" in
                 1) update_zapret_menu;;
                 2) change_configuration;;
-                3) manage_service restart;;
-                4) manage_service status; bash -c 'read -p "Нажмите Enter для продолжения..."';;
-                5) manage_autostart enable;;
-                6) manage_service start;;
-                7) manage_autostart disable;;
-                8) manage_service stop;;
-                9) uninstall_zapret;;
-                10) $TPUT_E; exit 0;;
+                3) toggle_service;;
+                4) uninstall_zapret;;
+                5) $TPUT_E; exit 0;;
                 *) echo "Неверный ввод!"; sleep 2;;
             esac
         else
@@ -429,8 +449,11 @@ install_zapret() {
     chmod +x /bin/zapret
     rm -f /opt/zapret/config 
     cp -r /opt/zapret/zapret.cfgs/configurations/general /opt/zapret/config || error_exit "не удалось автоматически скопировать конфиг"
+    mkdir -p /opt/zapret.installer/userdate
+    echo 'general' > /opt/zapret.installer/userdate/config
     rm -f /opt/zapret/ipset/zapret-hosts-user.txt
     cp -r /opt/zapret/zapret.cfgs/lists/list-basic.txt /opt/zapret/ipset/zapret-hosts-user.txt || error_exit "не удалось автоматически скопировать хостлист"
+    echo 'list-basic.txt' > /opt/zapret.installer/userdate/list
     cp -r /opt/zapret/zapret.cfgs/lists/ipset-discord.txt /opt/zapret/ipset/ipset-discord.txt || error_exit "не удалось автоматически скопировать ипсет"
     manage_service restart
     configure_zapret_conf
@@ -440,7 +463,10 @@ install_zapret() {
 change_configuration(){
     while true; do
         clear
-        echo "===== Меню управления Запретом ====="
+        echo "===== Управления конфигурацией Запрета ====="
+        echo -n "Используется хостлист: " && cat /opt/zapret.installer/userdate/list
+        echo -n "Используется стратегия: " && cat /opt/zapret.installer/userdate/config
+        echo ""
         echo "1) Сменить стратегию"
         echo "2) Сменить лист обхода"
         echo "3) Добавить ip-адреса или домены в лист обхода"
@@ -463,7 +489,7 @@ change_configuration(){
 update_zapret_menu(){
     while true; do
         clear
-        echo "===== Меню управления Запретом ====="
+        echo "===== Обновление Запрета ====="
         echo "1) Обновить zapret (не рекомендуется)"
         echo "2) Обновить скрипт"
         echo "3) Выйти в меню"
@@ -514,7 +540,7 @@ update_script() {
 }
 
 add_to_zapret() {
-    read -p "Введите IP-адреса или домены для добавления в лист (разделяйте пробелами, запятыми или |)(Enter для отмены): " input
+    read -p "Введите IP-адреса или домены для добавления в лист (разделяйте пробелами, запятыми или |)(Enter и пустой ввод для отмены): " input
     
     if [[ -z "$input" ]]; then
         main_menu
@@ -540,7 +566,7 @@ add_to_zapret() {
 }
 
 delete_from_zapret() {
-    read -p "Введите IP-адреса или домены для удаления из листа (разделяйте пробелами, запятыми или |)(Enter для отмены): " input
+    read -p "Введите IP-адреса или домены для удаления из листа (разделяйте пробелами, запятыми или |)(Enter и пустой ввод для отмены): " input
 
     if [[ -z "$input" ]]; then
         main_menu
@@ -605,24 +631,31 @@ configure_zapret_conf() {
     clear
 
 
+
+
     echo "Выберите стратегию (можно поменять в любой момент, запустив Меню управления запретом еще раз):"
-    PS3="Введите номер стратегии (по умолчанию 6): "
+    PS3="Введите номер стратегии (по умолчанию 'general'): "
 
-    select CONF in /opt/zapret/zapret.cfgs/configurations/* "Отмена"; do
-
-    
+    select CONF in $(for f in /opt/zapret/zapret.cfgs/configurations/*; do echo "$(basename "$f" | tr ' ' '.')"; done) "Отмена"; do
         if [[ "$CONF" == "Отмена" ]]; then
             main_menu
         elif [[ -n "$CONF" ]]; then
+            CONFIG_PATH="/opt/zapret/zapret.cfgs/configurations/${CONF//./ }"
             rm -f /opt/zapret/config
-            cp "$CONF" /opt/zapret/config
+            cp "$CONFIG_PATH" /opt/zapret/config || error_exit "не удалось скопировать стратегию"
             echo "Стратегия '$CONF' установлена."
+
+            mkdir -p /opt/zapret.installer/userdate
+
+            echo "$CONF" > /opt/zapret.installer/userdate/config
+
             sleep 2
             break
         else
             echo "Неверный выбор, попробуйте снова."
         fi
     done
+
 
    
     get_fwtype
@@ -651,22 +684,29 @@ configure_zapret_list() {
 
     clear
 
+
     echo "Выберите хостлист (можно поменять в любой момент, запустив Меню управления запретом еще раз):"
-    PS3="Введите номер листа (по умолчанию 2): "
-    select LIST in /opt/zapret/zapret.cfgs/lists/list* "Отмена"; do
+    PS3="Введите номер листа (по умолчанию 'list-basic.txt'): "
+
+    select LIST in $(for f in /opt/zapret/zapret.cfgs/lists/list*; do echo "$(basename "$f")"; done) "Отмена"; do
         if [[ "$LIST" == "Отмена" ]]; then
             main_menu
         elif [[ -n "$LIST" ]]; then
+            LIST_PATH="/opt/zapret/zapret.cfgs/lists/$LIST"
             rm -f /opt/zapret/ipset/zapret-hosts-user.txt
-            cp "$LIST" /opt/zapret/ipset/zapret-hosts-user.txt
+            cp "$LIST_PATH" /opt/zapret/ipset/zapret-hosts-user.txt || error_exit "не удалось скопировать хостлист"
             echo "Хостлист '$LIST' установлен."
+
+            mkdir -p /opt/zapret.installer/userdate
+
+            echo "$LIST" > /opt/zapret.installer/userdate/list
+
             sleep 2
             break
         else
             echo "Неверный выбор, попробуйте снова."
         fi
     done
-
     manage_service restart
     
     main_menu
@@ -691,6 +731,7 @@ uninstall_zapret() {
 }
 
 check_openwrt
+check_tput
 $TPUT_B
 detect_init
 main_menu

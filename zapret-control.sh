@@ -460,12 +460,26 @@ install_zapret() {
     
 }
 
+
 change_configuration(){
     while true; do
         clear
-        echo "===== Управления конфигурацией Запрета ====="
-        echo -n "Используется хостлист: " && cat /opt/zapret.installer/userdate/list
-        echo -n "Используется стратегия: " && cat /opt/zapret.installer/userdate/config
+        echo "===== Управление конфигурацией Запрета ====="
+        
+
+        if [[ -s /opt/zapret.installer/userdate/list ]]; then
+            echo -n "Используется хостлист: " && cat /opt/zapret.installer/userdate/list
+        else
+            echo "Используется хостлист: неизвестно"
+        fi
+        
+
+        if [[ -s /opt/zapret.installer/userdate/config ]]; then
+            echo -n "Используется стратегия: " && cat /opt/zapret.installer/userdate/config
+        else
+            echo "Используется стратегия: неизвестно"
+        fi
+        
         echo ""
         echo "1) Сменить стратегию"
         echo "2) Сменить лист обхода"
@@ -485,6 +499,7 @@ change_configuration(){
         esac
     done
 }
+
 
 update_zapret_menu(){
     while true; do

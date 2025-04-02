@@ -511,7 +511,7 @@ update_zapret_menu(){
         read -p "Выберите действие: " CHOICE
         case "$CHOICE" in
             1) update_zapret;;
-            2) update_script;;
+            2) update_installed_script;;
             3) main_menu;;
             *) echo "Неверный ввод!"; sleep 2;;
         esac
@@ -543,7 +543,17 @@ update_script() {
     if [[ -d /opt/zapret.installer/ ]]; then
         cd /opt/zapret.installer/ && git pull
     fi
-    if [[ ZAPRET_EXIST == true ]]; then
+
+    bash -c 'read -p "Нажмите Enter для продолжения..."'
+    exec "$0" "$@"
+}
+
+update_installed_script() {
+    if [[ -d /opt/zapret/zapret.cfgs ]]; then
+        cd /opt/zapret/zapret.cfgs && git pull
+    fi
+    if [[ -d /opt/zapret.installer/ ]]; then
+        cd /opt/zapret.installer/ && git pull
         rm -f /bin/zapret
         cp -r /opt/zapret.installer/zapret-control.sh /bin/zapret || error_exit "не удалось скопировать скрипт в /bin при обновлении"
         chmod +x /bin/zapret

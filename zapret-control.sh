@@ -334,7 +334,7 @@ toggle_service() {
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi
         if [[ $ZAPRET_ENABLED == true ]]; then echo "!Запрет в автозагрузке!"; fi
         if [[ $ZAPRET_ENABLED == false ]]; then echo "!Запрет не в автозагрузке!"; fi
-        echo ""
+        echo "======================================="
         echo "1) $( [[ $ZAPRET_ENABLED == true ]] && echo "Убрать из автозагрузки" || echo "Добавить в автозагрузку" )"
         echo "2) $( [[ $ZAPRET_ACTIVE == true ]] && echo "Выключить Запрет" || echo "Включить Запрет" )"
         echo "3) Посмотреть статус запрета"
@@ -361,8 +361,10 @@ main_menu() {
         echo "===== Меню управления Запретом ====="
         if [[ $ZAPRET_ACTIVE == true ]]; then echo "!Запрет запущен!"; fi
         if [[ $ZAPRET_ACTIVE == false ]]; then echo "!Запрет выключен!"; fi 
+        if [[ $ZAPRET_ENABLED == true ]]; then echo "!Запрет в автозагрузке!"; fi
+        if [[ $ZAPRET_ENABLED == false ]]; then echo "!Запрет не в автозагрузке!"; fi
         if [[ $ZAPRET_EXIST == false ]]; then clear; echo "===== Меню управления Запретом ====="; echo "!Запрет не установлен!"; fi
-        echo ""
+        echo "====================================="
         if [[ $ZAPRET_EXIST == true ]]; then
             echo "1) Проверить на обновления и обновить"
             echo "2) Сменить конфигурацию запрета"
@@ -449,11 +451,10 @@ install_zapret() {
     chmod +x /bin/zapret
     rm -f /opt/zapret/config 
     cp -r /opt/zapret/zapret.cfgs/configurations/general /opt/zapret/config || error_exit "не удалось автоматически скопировать конфиг"
-    mkdir -p /opt/zapret.installer/userdate
-    echo 'general' > /opt/zapret.installer/userdate/config
+
     rm -f /opt/zapret/ipset/zapret-hosts-user.txt
     cp -r /opt/zapret/zapret.cfgs/lists/list-basic.txt /opt/zapret/ipset/zapret-hosts-user.txt || error_exit "не удалось автоматически скопировать хостлист"
-    echo 'list-basic.txt' > /opt/zapret.installer/userdate/list
+
     cp -r /opt/zapret/zapret.cfgs/lists/ipset-discord.txt /opt/zapret/ipset/ipset-discord.txt || error_exit "не удалось автоматически скопировать ипсет"
     manage_service restart
     configure_zapret_conf
@@ -464,23 +465,12 @@ install_zapret() {
 change_configuration(){
     while true; do
         clear
-        echo "===== Управление конфигурацией Запрета ====="
-        
-
-        if [[ -s /opt/zapret.installer/userdate/list ]]; then
-            echo -n "Используется хостлист: " && cat /opt/zapret.installer/userdate/list
-        else
-            echo "Используется хостлист: неизвестно"
-        fi
-        
-
-        if [[ -s /opt/zapret.installer/userdate/config ]]; then
-            echo -n "Используется стратегия: " && cat /opt/zapret.installer/userdate/config
-        else
-            echo "Используется стратегия: неизвестно"
-        fi
-        
-        echo ""
+        cur_conf
+        cur_list
+        echo "===== Управление конфигурацией Запрета ======"
+        echo "Используется стратегия: $cr_cnf" 
+        echo "Используется хостлист: $cr_lst"
+        echo "============================================="
         echo "1) Сменить стратегию"
         echo "2) Сменить лист обхода"
         echo "3) Добавить ip-адреса или домены в лист обхода"
@@ -505,7 +495,8 @@ update_zapret_menu(){
     while true; do
         clear
         echo "===== Обновление Запрета ====="
-        echo "1) Обновить zapret (не рекомендуется)"
+        echo "=============================="
+        echo "1) Обновить zapret и скрипт (не рекомендуется)"
         echo "2) Обновить скрипт"
         echo "3) Выйти в меню"
         read -p "Выберите действие: " CHOICE
@@ -619,7 +610,7 @@ delete_from_zapret() {
 }
 
 search_in_zapret() {
-    read -p "Введите домен или IP-адрес для поиска в хостлисте (Enter для отмены): " keyword
+    read -p "Введите домен или IP-адрес для поиска в хостлисте (Enter и пустой ввод для отмены): " keyword
 
     if [[ -z "$keyword" ]]; then
         main_menu
@@ -635,6 +626,30 @@ search_in_zapret() {
         echo "Совпадений не найдено."
         sleep 2
         main_menu
+    fi
+}
+
+cur_conf() {
+    cr_cnf="неизвестно"
+    if [[ -f /opt/zapret/config ]]; then
+        for file in /opt/zapret/zapret.cfgs/configurations/*; do
+            if [[ -f "$file" && "$(sha256sum "$file" | awk '{print $1}')" == "$(sha256sum /opt/zapret/config | awk '{print $1}')" ]]; then
+                cr_cnf="$(basename "$file")"
+                break
+            fi
+        done
+    fi
+}
+
+cur_list() {
+    cr_lst="неизвестно"
+    if [[ -f /opt/zapret/config ]]; then
+        for file in /opt/zapret/zapret.cfgs/lists/*; do
+            if [[ -f "$file" && "$(sha256sum "$file" | awk '{print $1}')" == "$(sha256sum /opt/zapret/ipset/zapret-hosts-user.txt | awk '{print $1}')" ]]; then
+                cr_lst="$(basename "$file")"
+                break
+            fi
+        done
     fi
 }
 
@@ -670,9 +685,6 @@ configure_zapret_conf() {
             cp "$CONFIG_PATH" /opt/zapret/config || error_exit "не удалось скопировать стратегию"
             echo "Стратегия '$CONF' установлена."
 
-            mkdir -p /opt/zapret.installer/userdate
-
-            echo "$CONF" > /opt/zapret.installer/userdate/config
 
             sleep 2
             break
@@ -721,10 +733,6 @@ configure_zapret_list() {
             rm -f /opt/zapret/ipset/zapret-hosts-user.txt
             cp "$LIST_PATH" /opt/zapret/ipset/zapret-hosts-user.txt || error_exit "не удалось скопировать хостлист"
             echo "Хостлист '$LIST' установлен."
-
-            mkdir -p /opt/zapret.installer/userdate
-
-            echo "$LIST" > /opt/zapret.installer/userdate/list
 
             sleep 2
             break

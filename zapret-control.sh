@@ -295,7 +295,7 @@ install_dependencies() {
         . /etc/os-release
         
         declare -A command_by_ID=(
-            ["arch"]="pacman -S --noconfirm ipset"
+            ["arch"]="yay -S --noconfirm ipset"
             ["debian"]="apt-get install -y iptables ipset"
             ["fedora"]="dnf install -y iptables ipset"
             ["ubuntu"]="apt-get install -y iptables ipset"

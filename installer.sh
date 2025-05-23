@@ -66,13 +66,13 @@ if ! command -v git > /dev/null 2>&1; then
 fi
 
 if [ ! -d "/opt/zapret.installer" ]; then
-    $SUDO git clone https://github.com/Snowy-Fluffy/zapret.installer.git /opt/zapret.installer
+    $SUDO git clone https://github.com/gigachad228/zapret.installer-Fork.git /opt/zapret.installer
 else
     cd /opt/zapret.installer || exit
     if ! $SUDO git pull; then
         echo "Ошибка при обновлении. Удаляю репозиторий и клонирую заново..."
         $SUDO rm -rf /opt/zapret.installer
-        $SUDO git clone https://github.com/Snowy-Fluffy/zapret.installer.git /opt/zapret.installer
+        $SUDO git clone https://github.com/gigachad228/zapret.installer-Fork.git /opt/zapret.installer
     fi
 fi
 
